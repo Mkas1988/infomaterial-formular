@@ -187,11 +187,11 @@ export default function App() {
               <h2 className="hf-title" style={{textAlign:'center'}}>Welches Magazin möchtest du?</h2>
               <p className="hf-sub" style={{textAlign:'center'}}>Wähle dein gewünschtes Infomaterial.</p>
               <div className="hf-mag-cards">
-                <button className="hf-mag-card" onClick={()=>{if(abschluss!=='Bachelor'){setSelected(new Set());setSearch('');setOpenSections(new Set())}setAbschluss('Bachelor');go('studiengang')}}>
+                <button className="hf-mag-card" onClick={()=>{setAbschluss('Bachelor');setSearch('');setOpenSections(new Set());go('studiengang')}}>
                   <div className="hf-mag-img"><img src="/bachelor-magazin.avif" alt="Bachelor Magazin"/></div>
                   <div className="hf-mag-info"><span className="hf-mag-label">Bachelor</span></div>
                 </button>
-                <button className="hf-mag-card" onClick={()=>{if(abschluss!=='Master'){setSelected(new Set());setSearch('');setOpenSections(new Set())}setAbschluss('Master');go('studiengang')}}>
+                <button className="hf-mag-card" onClick={()=>{setAbschluss('Master');setSearch('');setOpenSections(new Set());go('studiengang')}}>
                   <div className="hf-mag-img"><img src="/master-magazin.avif" alt="Master Magazin"/></div>
                   <div className="hf-mag-info"><span className="hf-mag-label">Master</span></div>
                 </button>
