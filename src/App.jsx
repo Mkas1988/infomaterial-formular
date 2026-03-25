@@ -368,9 +368,9 @@ export default function App() {
 
           {/* 7. ZUSAMMENFASSUNG */}
           {step==='zusammenfassung'&&(
-            <div className="hf-center">
-              <h2 className="hf-title">Deine Anfrage im Überblick</h2>
-              <p className="hf-sub">Prüfe deine Angaben bevor du abschickst.</p>
+            <div className="hf-center" style={{textAlign:'left'}}>
+              <h2 className="hf-title" style={{textAlign:'left'}}>Deine Anfrage im Überblick</h2>
+              <p className="hf-sub" style={{textAlign:'left'}}>Prüfe deine Angaben bevor du abschickst.</p>
 
               <div className="hf-summary">
                 <div className="hf-summary-section">

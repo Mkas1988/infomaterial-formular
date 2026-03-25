@@ -262,7 +262,7 @@ h1,h2,h3{font-family:'Neue-Haas-Grotesk-Display-Pro',Helvetica,Arial,sans-serif;
 
 /* ═══ ZUSAMMENFASSUNG ═══ */
 .hf-summary{display:flex;flex-direction:column;gap:0;border:1px solid var(--fom-gray-light);border-radius:var(--radius);overflow:hidden}
-.hf-summary-section{padding:16px 20px;border-bottom:1px solid var(--fom-gray-light);display:flex;gap:20px;align-items:baseline}
+.hf-summary-section{padding:16px 20px;border-bottom:1px solid var(--fom-gray-light);display:flex;flex-direction:column;gap:4px;text-align:left}
 .hf-summary-section:last-child{border-bottom:none}
 .hf-summary-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--fom-gray);min-width:130px;flex-shrink:0;margin:0}
 .hf-summary-value{font-size:14px;font-weight:500;color:var(--fom-black);margin:0;line-height:1.5}
