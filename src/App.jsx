@@ -353,6 +353,8 @@ export default function App() {
                       ))}
                     </div>
                   )}
+                  {modell&&<div className="hf-sg-aside-meta"><span className="hf-sg-aside-meta-label">Studienmodell</span><span>{modell==='Campus'?'Am Campus':modell==='DLS'?'Digitales Live-Studium':'Noch unsicher'}</span></div>}
+                  {modell==='Campus'&&standort&&<div className="hf-sg-aside-meta"><span className="hf-sg-aside-meta-label">Hochschulzentrum</span><span>{ds(standort)}</span></div>}
                 </div>
               </div>
 
@@ -368,7 +370,7 @@ export default function App() {
 
           {/* 7. ZUSAMMENFASSUNG */}
           {step==='zusammenfassung'&&(
-            <div className="hf-center" style={{textAlign:'left'}}>
+            <div className="hf-center" style={{textAlign:'left',display:'flex',flexDirection:'column'}}>
               <h2 className="hf-title" style={{textAlign:'left'}}>Deine Anfrage im Überblick</h2>
               <p className="hf-sub" style={{textAlign:'left'}}>Prüfe deine Angaben bevor du abschickst.</p>
 
@@ -408,7 +410,7 @@ export default function App() {
                 <button className="hf-mehr-btn" onClick={()=>go('abschluss','back')}>+ Weitere Materialien hinzufügen</button>
               </div>
 
-              <button className="hf-submit" style={{marginTop:24}} disabled={submitting} onClick={handleSubmit}>
+              <button className="hf-submit" style={{marginTop:24,alignSelf:'center'}} disabled={submitting} onClick={handleSubmit}>
                 {submitting?<><span className="hf-spin"/> Wird gesendet …</>:<><IcoSend/> Infomaterial kostenlos anfordern</>}
               </button>
             </div>
