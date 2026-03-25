@@ -124,7 +124,7 @@ export default function App() {
   if(!authed) return (
     <div className="hf">
       <div className="hf-pw-gate">
-        <img src="/logos/fom-logo.svg" alt="FOM" style={{width:120,marginBottom:32}}/>
+        <img src="/logos/fom-logo.png" alt="FOM" style={{width:180,marginBottom:32}}/>
         <h2 style={{margin:'0 0 8px',fontFamily:'var(--fom-display)'}}>Zugang geschützt</h2>
         <p style={{color:'var(--fom-gray)',margin:'0 0 24px',fontSize:14}}>Bitte gib das Passwort ein, um fortzufahren.</p>
         <form onSubmit={e=>{e.preventDefault();if(pw==='Fom!1991'){sessionStorage.setItem(PW_KEY,'1');setAuthed(true)}else setPwErr(true)}} style={{display:'flex',flexDirection:'column',gap:12,width:'100%',maxWidth:320}}>
