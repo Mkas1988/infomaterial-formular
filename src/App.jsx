@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 const API = '/api';
+const PW_KEY = 'fom_auth';
 const ds = n => (!n ? '' : n.toLowerCase()==='virtuell' ? 'Digitales Live-Studium' : n);
 
 const IcoArrow=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
@@ -32,6 +33,9 @@ const STEP_KEYS = ['abschluss','studiengang','modell','standort','kontakt','vers
 const STEP_LABELS = ['Magazin','Studiengänge','Studienmodell','Hochschulzentrum','Kontakt','Versand','Übersicht'];
 
 export default function App() {
+  const [authed,setAuthed]=useState(()=>sessionStorage.getItem(PW_KEY)==='1');
+  const [pw,setPw]=useState('');
+  const [pwErr,setPwErr]=useState(false);
   const [data,setData]=useState([]);
   const [loading,setLoading]=useState(true);
   const [step,setStep]=useState('start');
@@ -50,7 +54,12 @@ export default function App() {
   const [submitted,setSubmitted]=useState(false);
   const [cartOpen,setCartOpen]=useState(false);
 
-  useEffect(()=>{fetch(`${API}/infomaterial/produkte`).then(r=>r.json()).then(r=>{if(r.success)setData(r.data||[])}).finally(()=>setLoading(false))},[]);
+  useEffect(()=>{
+    fetch('/produkte.json').then(r=>{if(!r.ok)throw new Error();return r.json()})
+      .catch(()=>fetch(`${API}/infomaterial/produkte`).then(r=>r.json()))
+      .then(r=>{if(r.success)setData(r.data||[])})
+      .finally(()=>setLoading(false));
+  },[]);
 
   // Group by Produktname
   const grouped={};
@@ -111,6 +120,21 @@ export default function App() {
     setTimeout(()=>{setSubmitting(false);setSubmitted(true);go('done')},1500);
   };
   const reset=()=>{setAbschluss(null);setSelected(new Set());setModell(null);setStandort('');setStandortSearch('');setForm({vorname:'',nachname:'',email:''});setPostWunsch(null);setAdresse({strasse:'',plz:'',ort:''});setSubmitted(false);setSearch('');setOpenSections(new Set());go('start')};
+
+  if(!authed) return (
+    <div className="hf">
+      <div className="hf-pw-gate">
+        <img src="/logos/fom-logo.svg" alt="FOM" style={{width:120,marginBottom:32}}/>
+        <h2 style={{margin:'0 0 8px',fontFamily:'var(--fom-display)'}}>Zugang geschützt</h2>
+        <p style={{color:'var(--fom-gray)',margin:'0 0 24px',fontSize:14}}>Bitte gib das Passwort ein, um fortzufahren.</p>
+        <form onSubmit={e=>{e.preventDefault();if(pw==='Fom!1991'){sessionStorage.setItem(PW_KEY,'1');setAuthed(true)}else setPwErr(true)}} style={{display:'flex',flexDirection:'column',gap:12,width:'100%',maxWidth:320}}>
+          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setPwErr(false)}} placeholder="Passwort" style={{padding:'12px 16px',border:`2px solid ${pwErr?'#e00':'var(--fom-gray-light)'}`,borderRadius:12,fontSize:15,fontFamily:'inherit',outline:'none',transition:'border .2s'}}/>
+          {pwErr&&<span style={{color:'#e00',fontSize:13}}>Falsches Passwort</span>}
+          <button type="submit" style={{padding:'12px',background:'var(--fom-teal)',color:'#fff',border:'none',borderRadius:50,fontSize:15,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Anmelden</button>
+        </form>
+      </div>
+    </div>
+  );
 
   return (
     <div className="hf">
