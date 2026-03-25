@@ -42,6 +42,7 @@ export default function App() {
   const [dir,setDir]=useState('fwd');
   const [abschluss,setAbschluss]=useState(null);
   const [selected,setSelected]=useState(new Set());
+  const [productConfig,setProductConfig]=useState({}); // {name: {modell, standort}}
   const [modell,setModell]=useState(null);
   const [standort,setStandort]=useState('');
   const [standortSearch,setStandortSearch]=useState('');
@@ -87,24 +88,29 @@ export default function App() {
 
   // Standorte — lookup via grouped dict (stable)
   const selectedMasters=[...selected].map(n=>grouped[n]).filter(Boolean);
-  const allStandorte=(()=>{const s=new Set();const hide=new Set(['virtuell','fernstudium','']);selectedMasters.forEach(m=>m.instanzen.forEach(i=>{const name=(i.StandortName||'').trim();if(!hide.has(name.toLowerCase())&&name&&!name.includes(','))s.add(name)}));return[...s].sort()})();
+  const unassigned=selectedMasters.filter(m=>!productConfig[m.Produktname]);
+  const allStandorte=(()=>{const s=new Set();const hide=new Set(['virtuell','fernstudium','']);(unassigned.length>0?unassigned:selectedMasters).forEach(m=>m.instanzen.forEach(i=>{const name=(i.StandortName||'').trim();if(!hide.has(name.toLowerCase())&&name&&!name.includes(','))s.add(name)}));return[...s].sort()})();
   const filteredStandorte=allStandorte.filter(s=>!standortSearch||s.toLowerCase().includes(standortSearch.toLowerCase()));
 
   const go=(s,d='fwd')=>{setDir(d);setStep(s)};
   const stepIdx=STEP_KEYS.indexOf(step);
-  const toggleSelect=name=>{setSelected(prev=>{const n=new Set(prev);if(n.has(name))n.delete(name);else n.add(name);return n})};
+  const toggleSelect=name=>{setSelected(prev=>{const n=new Set(prev);if(n.has(name)){n.delete(name);setProductConfig(pc=>{const c={...pc};delete c[name];return c})}else n.add(name);return n})};
+  // Assign modell+standort to all unassigned products
+  const assignConfig=(m,s)=>{setProductConfig(prev=>{const next={...prev};[...selected].forEach(n=>{if(!next[n])next[n]={modell:m,standort:m==='Campus'?(s||''):''}});return next})};
   const toggleSection=key=>{setOpenSections(prev=>{const n=new Set(prev);if(n.has(key))n.delete(key);else n.add(key);return n})};
 
   const buildCart=()=>{
     const items=[];
     selectedMasters.forEach(m=>{
-      if(modell==='DLS'||modell==='unsicher'){
+      const pc=productConfig[m.Produktname];
+      if(!pc)return;
+      if(pc.modell==='DLS'||pc.modell==='unsicher'){
         const inst=m.instanzen.find(i=>(i.StandortName||'').toLowerCase()==='virtuell');
-        if(inst)items.push({instanzId:inst.InstanzID,produktname:m.Produktname,standort:'Digitales Live-Studium',modell:modell==='unsicher'?'Noch unsicher':'DLS'});
+        if(inst)items.push({instanzId:inst.InstanzID,produktname:m.Produktname,standort:'Digitales Live-Studium',modell:pc.modell==='unsicher'?'Noch unsicher':'DLS'});
       }
-      if(modell==='Campus'){
-        const inst=m.instanzen.find(i=>i.StandortName===standort);
-        if(inst)items.push({instanzId:inst.InstanzID,produktname:m.Produktname,standort:ds(standort),modell:'Campus'});
+      if(pc.modell==='Campus'){
+        const inst=m.instanzen.find(i=>i.StandortName===pc.standort);
+        if(inst)items.push({instanzId:inst.InstanzID,produktname:m.Produktname,standort:ds(pc.standort),modell:'Campus'});
       }
     });
     return items;
@@ -119,7 +125,7 @@ export default function App() {
     console.log('Anfrage:',{produkte:buildCart(),kontakt:form,post:postWunsch,...(postWunsch?{adresse}:{})});
     setTimeout(()=>{setSubmitting(false);setSubmitted(true);go('done')},1500);
   };
-  const reset=()=>{setAbschluss(null);setSelected(new Set());setModell(null);setStandort('');setStandortSearch('');setForm({vorname:'',nachname:'',email:''});setPostWunsch(null);setAdresse({strasse:'',plz:'',ort:''});setSubmitted(false);setSearch('');setOpenSections(new Set());go('start')};
+  const reset=()=>{setAbschluss(null);setSelected(new Set());setProductConfig({});setModell(null);setStandort('');setStandortSearch('');setForm({vorname:'',nachname:'',email:''});setPostWunsch(null);setAdresse({strasse:'',plz:'',ort:''});setSubmitted(false);setSearch('');setOpenSections(new Set());go('start')};
 
   if(!authed) return (
     <div className="hf">
@@ -252,7 +258,7 @@ export default function App() {
                 </div>
 
                 {selected.size>0&&(
-                  <button className="hf-sg-weiter-btn" onClick={()=>go('modell')}>Weiter <IcoArrow/></button>
+                  <button className="hf-sg-weiter-btn" onClick={()=>{const hasUnassigned=[...selected].some(n=>!productConfig[n]);if(hasUnassigned)go('modell');else go('kontakt')}}>Weiter <IcoArrow/></button>
                 )}
                 </>)}
 
@@ -266,12 +272,12 @@ export default function App() {
                     <div className="hf-option-text"><span className="hf-option-label">Am Campus</span><span className="hf-option-desc">Präsenzstudium vor Ort an einem Hochschulzentrum</span></div>
                     <IcoArrow/>
                   </button>
-                  <button className="hf-option" onClick={()=>{setModell('DLS');go('kontakt')}}>
+                  <button className="hf-option" onClick={()=>{setModell('DLS');assignConfig('DLS','');go('kontakt')}}>
                     <span className="hf-option-emoji">💻</span>
                     <div className="hf-option-text"><span className="hf-option-label">Digitales Live-Studium</span><span className="hf-option-desc">Virtuell & interaktiv — live aus den FOM Studios</span></div>
                     <IcoArrow/>
                   </button>
-                  <button className="hf-option" onClick={()=>{setModell('unsicher');go('kontakt')}}>
+                  <button className="hf-option" onClick={()=>{setModell('unsicher');assignConfig('unsicher','');go('kontakt')}}>
                     <span className="hf-option-emoji">🤔</span>
                     <div className="hf-option-text"><span className="hf-option-label">Ich bin noch unsicher</span><span className="hf-option-desc">Wir beraten dich gerne zu beiden Varianten</span></div>
                     <IcoArrow/>
@@ -288,7 +294,7 @@ export default function App() {
                 )}
                 <div className="hf-loc-grid">
                   {filteredStandorte.map(s=>(
-                    <button key={s} className={`hf-loc ${standort===s?'active':''}`} onClick={()=>{setStandort(s);go('kontakt')}}>
+                    <button key={s} className={`hf-loc ${standort===s?'active':''}`} onClick={()=>{setStandort(s);assignConfig('Campus',s);go('kontakt')}}>
                       <IcoPin/><span>{ds(s)}</span>{standort===s?<IcoCheckSm/>:<IcoArrow/>}
                     </button>
                   ))}
@@ -345,16 +351,17 @@ export default function App() {
                     <p className="hf-sg-aside-empty">Noch keine Studiengänge ausgewählt.</p>
                   ):(
                     <div className="hf-sg-aside-items">
-                      {[...selected].map(name=>(
+                      {[...selected].map(name=>{const pc=productConfig[name];return(
                         <div key={name} className="hf-sg-aside-item">
-                          <span className="hf-sg-aside-name">{name}</span>
+                          <div className="hf-sg-aside-item-info">
+                            <span className="hf-sg-aside-name">{name}</span>
+                            {pc&&<span className="hf-sg-aside-detail">{pc.modell==='Campus'?`Campus · ${ds(pc.standort)}`:pc.modell==='DLS'?'Digitales Live-Studium':pc.modell==='unsicher'?'Noch unsicher':''}</span>}
+                          </div>
                           <button className="hf-sg-aside-rm" onClick={()=>toggleSelect(name)}><IcoX/></button>
                         </div>
-                      ))}
+                      )})}
                     </div>
                   )}
-                  {modell&&<div className="hf-sg-aside-meta"><span className="hf-sg-aside-meta-label">Studienmodell</span><span>{modell==='Campus'?'Am Campus':modell==='DLS'?'Digitales Live-Studium':'Noch unsicher'}</span></div>}
-                  {modell==='Campus'&&standort&&<div className="hf-sg-aside-meta"><span className="hf-sg-aside-meta-label">Hochschulzentrum</span><span>{ds(standort)}</span></div>}
                 </div>
               </div>
 
@@ -376,25 +383,16 @@ export default function App() {
 
               <div className="hf-summary">
                 <div className="hf-summary-section">
-                  <h4 className="hf-summary-label">Magazin</h4>
-                  <p className="hf-summary-value">{abschluss}</p>
-                </div>
-                <div className="hf-summary-section">
-                  <h4 className="hf-summary-label">Studiengänge</h4>
+                  <h4 className="hf-summary-label">Bestellte Materialien</h4>
                   <div className="hf-summary-list">
-                    {[...selected].map(n=><div key={n} className="hf-summary-item">{n}</div>)}
+                    {[...selected].map(n=>{const pc=productConfig[n];return(
+                      <div key={n} className="hf-summary-product">
+                        <span className="hf-summary-product-name">{n}</span>
+                        {pc&&<span className="hf-summary-product-detail">{pc.modell==='Campus'?`Am Campus · ${ds(pc.standort)}`:pc.modell==='DLS'?'Digitales Live-Studium':'Noch unsicher'}</span>}
+                      </div>
+                    )})}
                   </div>
                 </div>
-                <div className="hf-summary-section">
-                  <h4 className="hf-summary-label">Studienmodell</h4>
-                  <p className="hf-summary-value">{modell==='Campus'?'Am Campus':modell==='DLS'?'Digitales Live-Studium':'Noch unsicher'}</p>
-                </div>
-                {modell==='Campus'&&standort&&(
-                  <div className="hf-summary-section">
-                    <h4 className="hf-summary-label">Hochschulzentrum</h4>
-                    <p className="hf-summary-value">{ds(standort)}</p>
-                  </div>
-                )}
                 <div className="hf-summary-section">
                   <h4 className="hf-summary-label">Kontakt</h4>
                   <p className="hf-summary-value">{form.vorname} {form.nachname}<br/>{form.email}</p>
