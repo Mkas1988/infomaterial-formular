@@ -171,7 +171,7 @@ export default function App() {
     <div className="hf">
       {/* Header */}
       <header className="hf-header">
-        <a href="https://www.fom.de" target="_blank" rel="noopener"><img src="/logos/fom-logo-white.svg" alt="FOM" className="hf-logo"/></a>
+        <a href="https://www.fom.de" target="_blank" rel="noopener"><img src="/logos/fom-logo.png" alt="FOM" className="hf-logo"/></a>
         <div className="hf-header-right">
           {selected.size>0&&step!=='done'&&(
             <span className="hf-header-badge">{selected.size} Studiengang{selected.size!==1?'e':''}</span>
