@@ -252,6 +252,161 @@ def fetch_and_map_produkte(config):
 # HTTP Server
 # ---------------------------------------------------------------------------
 
+def dynamics_request(config, method, path, body=None):
+    """Authenticated request to Dynamics 365 Web API."""
+    token = get_access_token(config)
+    base = config["org_url"].rstrip("/")
+    url = f"{base}/api/data/v9.2/{path}"
+    data = json.dumps(body).encode("utf-8") if body else None
+
+    req = urllib.request.Request(url, data=data, method=method)
+    req.add_header("Authorization", f"Bearer {token}")
+    req.add_header("Accept", "application/json")
+    req.add_header("OData-MaxVersion", "4.0")
+    req.add_header("OData-Version", "4.0")
+    req.add_header("Prefer", 'odata.include-annotations="*"')
+    if body:
+        req.add_header("Content-Type", "application/json; charset=utf-8")
+
+    try:
+        with urllib.request.urlopen(req, context=SSL_CTX) as resp:
+            if resp.status == 204:
+                entity_id = resp.headers.get("OData-EntityId", "")
+                return {"_entityId": entity_id, "_status": resp.status}
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        raise Exception(f"Dynamics API error {e.code}: {error_body}")
+
+
+def extract_id(result):
+    """Extract entity GUID from OData-EntityId header."""
+    entity_id = result.get("_entityId", "")
+    if entity_id:
+        return entity_id.split("(")[-1].rstrip(")")
+    return None
+
+
+def find_contact_by_email(config, email):
+    """Find an existing contact by email address."""
+    params = urllib.parse.urlencode({
+        "$filter": f"emailaddress1 eq '{email}'",
+        "$select": "contactid,firstname,lastname,emailaddress1",
+        "$top": "1",
+    }, quote_via=urllib.parse.quote)
+    result = dynamics_request(config, "GET", f"contacts?{params}")
+    records = result.get("value", [])
+    return records[0] if records else None
+
+
+def create_or_update_contact(config, data):
+    """Create a new contact or update existing one by email."""
+    existing = find_contact_by_email(config, data["email"])
+
+    contact_data = {
+        "firstname": data["vorname"],
+        "lastname": data["nachname"],
+        "emailaddress1": data["email"],
+        "bcw_kontaktursprung": 100000003,  # Website Infomaterial
+    }
+
+    if existing:
+        contact_id = existing["contactid"]
+        dynamics_request(config, "PATCH", f"contacts({contact_id})", contact_data)
+        return contact_id, "updated"
+    else:
+        result = dynamics_request(config, "POST", "contacts", contact_data)
+        contact_id = extract_id(result)
+        if not contact_id:
+            created = find_contact_by_email(config, data["email"])
+            contact_id = created["contactid"] if created else None
+        return contact_id, "created"
+
+
+def create_produktinteresse(config, contact_id, produkte_ids):
+    """Create bcw_produktinteresse + bcw_produktinteresseprodukte records.
+
+    Sets bcw_infomaterialsenden = True to flag info material request.
+    """
+    steps = []
+
+    pi_data = {
+        "bcw_name": "Infomaterial-Anforderung",
+        "bcw_Kontakt@odata.bind": f"/contacts({contact_id})",
+        "bcw_eingangskanal": 100000003,  # Website
+    }
+
+    result = dynamics_request(config, "POST", "bcw_produktinteresses", pi_data)
+    pi_id = extract_id(result)
+    steps.append({"step": "Produktinteresse erstellt", "id": pi_id})
+
+    if not pi_id:
+        return steps
+
+    # Create Produktinteresseprodukte for each selected product
+    for prod in produkte_ids:
+        name = prod.get("name", "")
+        prod_id = prod.get("id", "")
+
+        pip_data = {
+            "bcw_name": name,
+            "bcw_Produktinteresse@odata.bind": f"/bcw_produktinteresses({pi_id})",
+            "bcw_Kontakt@odata.bind": f"/contacts({contact_id})",
+        }
+        if prod_id:
+            pip_data["bcw_Produkt@odata.bind"] = f"/products({prod_id})"
+
+        try:
+            result = dynamics_request(config, "POST", "bcw_produktinteresseproduktes", pip_data)
+            pip_id = extract_id(result)
+            steps.append({"step": f"Produkt verknüpft: {name}", "produktId": prod_id, "id": pip_id})
+        except Exception as e:
+            steps.append({"step": f"Produkt-Verknüpfung fehlgeschlagen: {name}", "error": str(e)})
+
+    return steps
+
+
+def handle_infomaterial_request(data):
+    """Process an infomaterial request: Contact + Produktinteresse in Dynamics."""
+    log = {"timestamp": datetime.now().isoformat(), "status": "pending", "steps": [], "input": data}
+
+    try:
+        # Validate
+        required = ["vorname", "nachname", "email"]
+        missing = [f for f in required if not data.get(f)]
+        if missing:
+            log["status"] = "error"
+            log["error"] = f"Fehlende Felder: {', '.join(missing)}"
+            return log, 400
+
+        # 1. Create or update contact
+        contact_id, action = create_or_update_contact(DYNAMICS_CONFIG, data)
+        if not contact_id:
+            log["status"] = "error"
+            log["error"] = "Kontakt konnte nicht erstellt werden"
+            return log, 500
+        log["steps"].append({"step": f"Kontakt {action}", "contactId": contact_id})
+
+        # 2. Create Produktinteresse with infomaterialsenden=true
+        produkte = data.get("produkte", [])
+        if produkte:
+            pi_steps = create_produktinteresse(DYNAMICS_CONFIG, contact_id, produkte)
+            log["steps"].extend(pi_steps)
+
+        log["status"] = "success"
+        log["contactId"] = contact_id
+        return log, 200
+
+    except Exception as e:
+        log["status"] = "error"
+        log["error"] = str(e)
+        return log, 500
+
+
+# Store recent submissions for debug
+recent_submissions = []
+
+
 class APIHandler(http.server.BaseHTTPRequestHandler):
     produkte_data = []
 
@@ -266,6 +421,13 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
                 "data": self.produkte_data,
             }, ensure_ascii=False)
             self.wfile.write(response.encode("utf-8"))
+
+        elif self.path == "/api/infomaterial/submissions":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(recent_submissions, ensure_ascii=False).encode("utf-8"))
 
         elif self.path == "/api/infomaterial/produkte/refresh":
             print("  Refresh angefordert...")
@@ -288,10 +450,41 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
         else:
             self.send_error(404, "Not Found")
 
+    def do_POST(self):
+        if self.path == "/api/infomaterial/submit":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8"))
+            except Exception:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": "Invalid JSON"}).encode("utf-8"))
+                return
+
+            log, status_code = handle_infomaterial_request(data)
+            recent_submissions.insert(0, log)
+            if len(recent_submissions) > 50:
+                recent_submissions.pop()
+
+            self.send_response(status_code)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            response = json.dumps({
+                "success": log["status"] == "success",
+                "log": log,
+            }, ensure_ascii=False)
+            self.wfile.write(response.encode("utf-8"))
+        else:
+            self.send_error(404, "Not Found")
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
 

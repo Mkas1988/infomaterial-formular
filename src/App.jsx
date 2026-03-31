@@ -120,10 +120,33 @@ export default function App() {
   const ua=(f,v)=>setAdresse(p=>({...p,[f]:v}));
   const canKontakt=form.vorname.trim()&&form.nachname.trim()&&form.email.trim();
 
-  const handleSubmit=()=>{
+  const handleSubmit=async()=>{
     setSubmitting(true);
-    console.log('Anfrage:',{produkte:buildCart(),kontakt:form,post:postWunsch,...(postWunsch?{adresse}:{})});
-    setTimeout(()=>{setSubmitting(false);setSubmitted(true);go('done')},1500);
+    const cart=buildCart();
+    const payload={
+      vorname:form.vorname.trim(),
+      nachname:form.nachname.trim(),
+      email:form.email.trim(),
+      postWunsch:!!postWunsch,
+      ...(postWunsch?{adresse}:{}),
+      produkte:cart.map(p=>({id:p.instanzId,name:p.produktname})),
+    };
+    try{
+      const resp=await fetch(`${API}/infomaterial/submit`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const result=await resp.json();
+      if(!resp.ok||!result.success){
+        console.error('Dynamics error:',result);
+        alert('Es ist ein Fehler aufgetreten. Bitte versuche es erneut.');
+        setSubmitting(false);
+        return;
+      }
+      console.log('Dynamics OK:',result);
+      setSubmitting(false);setSubmitted(true);go('done');
+    }catch(err){
+      console.error('Submit error:',err);
+      alert('Netzwerkfehler — bitte versuche es erneut.');
+      setSubmitting(false);
+    }
   };
   const reset=()=>{setAbschluss(null);setSelected(new Set());setProductConfig({});setModell(null);setStandort('');setStandortSearch('');setForm({vorname:'',nachname:'',email:''});setPostWunsch(null);setAdresse({strasse:'',plz:'',ort:''});setSubmitted(false);setSearch('');setOpenSections(new Set());go('start')};
 
