@@ -323,27 +323,30 @@ def create_or_update_contact(config, data):
         return contact_id, "created"
 
 
-def create_produktinteresse(config, contact_id, produkte_ids):
-    """Create bcw_produktinteresse + bcw_produktinteresseprodukte records.
-
-    Sets bcw_infomaterialsenden = True to flag info material request.
-    """
+def create_produktinteresse(config, contact_id, produkte_ids, post_wunsch=False):
+    """Create bcw_produktinteresse + bcw_produktinteresseprodukte records."""
     steps = []
+
+    # Versandart: 100000000=E-Mail, 100000001=Post, 100000002=E-Mail & Post
+    versandart = 100000002 if post_wunsch else 100000000
 
     pi_data = {
         "bcw_name": "Infomaterial-Anforderung",
         "bcw_Kontakt@odata.bind": f"/contacts({contact_id})",
         "bcw_eingangskanal": 100000003,  # Website
+        "bcw_informationsmaterialiensenden": True,
+        "bcw_versandart": versandart,
     }
 
     result = dynamics_request(config, "POST", "bcw_produktinteresses", pi_data)
     pi_id = extract_id(result)
-    steps.append({"step": "Produktinteresse erstellt", "id": pi_id})
+    steps.append({"step": "Produktinteresse erstellt", "id": pi_id, "infomaterialSenden": True})
 
     if not pi_id:
         return steps
 
     # Create Produktinteresseprodukte for each selected product
+    # (must be done before closing, as closing may lock the record)
     for prod in produkte_ids:
         name = prod.get("name", "")
         prod_id = prod.get("id", "")
@@ -362,6 +365,16 @@ def create_produktinteresse(config, contact_id, produkte_ids):
             steps.append({"step": f"Produkt verknüpft: {name}", "produktId": prod_id, "id": pip_id})
         except Exception as e:
             steps.append({"step": f"Produkt-Verknüpfung fehlgeschlagen: {name}", "error": str(e)})
+
+    # Close the Produktinteresse: statecode=1 (Erfassung abgeschlossen), statuscode=2
+    try:
+        dynamics_request(config, "PATCH", f"bcw_produktinteresses({pi_id})", {
+            "statecode": 1,
+            "statuscode": 2,
+        })
+        steps.append({"step": "Produktinteresse abgeschlossen"})
+    except Exception as e:
+        steps.append({"step": "Abschluss fehlgeschlagen", "error": str(e)})
 
     return steps
 
@@ -389,9 +402,9 @@ def handle_infomaterial_request(data):
 
         # 2. Create Produktinteresse with infomaterialsenden=true
         produkte = data.get("produkte", [])
-        if produkte:
-            pi_steps = create_produktinteresse(DYNAMICS_CONFIG, contact_id, produkte)
-            log["steps"].extend(pi_steps)
+        post_wunsch = data.get("postWunsch", False)
+        pi_steps = create_produktinteresse(DYNAMICS_CONFIG, contact_id, produkte, post_wunsch)
+        log["steps"].extend(pi_steps)
 
         log["status"] = "success"
         log["contactId"] = contact_id
