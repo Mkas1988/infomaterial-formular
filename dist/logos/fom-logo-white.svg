@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Ebene_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1337.95 640.63">
+  <defs>
+    <style>
+      .st0, .st1 {
+        fill: #fff;
+      }
+
+      .st2 {
+        fill: #00998b;
+      }
+
+      .st1 {
+        font-family: NHaasGroteskDSPro-65Md, 'Neue Haas Grotesk Display Pro';
+        font-size: 80px;
+        font-weight: 500;
+        letter-spacing: .05em;
+      }
+    </style>
+  </defs>
+  <text class="st1" transform="translate(537.59 344.83)"><tspan x="0" y="0">Die Hochschule.</tspan><tspan x="0" y="102">Für Berufstätige.</tspan></text>
+  <rect class="st0" x="160.12" y="159.15" width="320.23" height="320.23"/>
+  <rect class="st0" x="160.12" y="159.15" width="320.23" height="320.23"/>
+  <polygon class="st2" points="233.26 346.98 233.26 389.72 215.04 389.72 215.04 447.41 192.15 447.41 192.15 288.55 240.26 288.55 244.1 330.17 215.04 330.17 215.04 346.98 233.26 346.98"/>
+  <path class="st2" d="M299.16,451.1c-24.3,0-44.01-37.54-44.01-83.85s19.71-83.85,44.01-83.85,44,37.54,44,83.85-19.71,83.85-44,83.85Z"/>
+  <polygon class="st2" points="424.92 447.41 421.5 377.07 403.4 447.37 403.4 447.38 403.39 447.41 403.39 447.37 385.31 377.07 381.88 447.41 358.47 447.41 369.13 288.55 387.6 288.55 403.39 357.22 419.2 288.55 437.67 288.55 448.33 447.41 424.92 447.41"/>
+  <path class="st0" d="M299.16,327.43c-11.56,0-20.91,17.84-20.91,39.85s9.36,39.85,20.91,39.85,20.92-17.84,20.92-39.85-9.37-39.85-20.92-39.85Z"/>
+</svg>
