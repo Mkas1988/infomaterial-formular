@@ -331,7 +331,7 @@ def create_produktinteresse(config, contact_id, produkte_ids, post_wunsch=False)
     versandart = 100000002 if post_wunsch else 100000000
 
     pi_data = {
-        "bcw_name": "Infomaterial-Anforderung",
+        "bcw_name": "Infomaterial-Website",
         "bcw_Kontakt@odata.bind": f"/contacts({contact_id})",
         "bcw_eingangskanal": 100000003,  # Website
         "bcw_informationsmaterialiensenden": True,
@@ -365,6 +365,32 @@ def create_produktinteresse(config, contact_id, produkte_ids, post_wunsch=False)
             steps.append({"step": f"Produkt verknüpft: {name}", "produktId": prod_id, "id": pip_id})
         except Exception as e:
             steps.append({"step": f"Produkt-Verknüpfung fehlgeschlagen: {name}", "error": str(e)})
+
+    # Close the BPF (Business Process Flow) first, then the Produktinteresse
+    BPF_LAST_STAGE_ID = "bbdbeea3-ea9d-4390-8a2d-c0d826d53b0b"  # "Produktinteresse Abschließen"
+    try:
+        # Find the BPF instance for this PI
+        bpf_params = urllib.parse.urlencode({
+            "$filter": f"_bpf_bcw_produktinteresseid_value eq '{pi_id}'",
+            "$select": "businessprocessflowinstanceid",
+            "$top": "1",
+        }, quote_via=urllib.parse.quote)
+        bpf_result = dynamics_request(config, "GET", f"bcw_studienberatungs?{bpf_params}")
+        bpf_records = bpf_result.get("value", [])
+        if bpf_records:
+            bpf_id = bpf_records[0]["businessprocessflowinstanceid"]
+            # Move to last stage
+            dynamics_request(config, "PATCH", f"bcw_studienberatungs({bpf_id})", {
+                "activestageid@odata.bind": f"/processstages({BPF_LAST_STAGE_ID})",
+            })
+            # Finish BPF
+            dynamics_request(config, "PATCH", f"bcw_studienberatungs({bpf_id})", {
+                "statecode": 1,
+                "statuscode": 2,
+            })
+            steps.append({"step": "BPF abgeschlossen"})
+    except Exception as e:
+        steps.append({"step": "BPF-Abschluss fehlgeschlagen", "error": str(e)})
 
     # Close the Produktinteresse: statecode=1 (Erfassung abgeschlossen), statuscode=2
     try:
