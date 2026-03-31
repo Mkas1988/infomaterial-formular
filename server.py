@@ -323,7 +323,7 @@ def create_or_update_contact(config, data):
         return contact_id, "created"
 
 
-def create_produktinteresse(config, contact_id, produkte_ids, post_wunsch=False):
+def create_produktinteresse(config, contact_id, produkte_ids, post_wunsch=False, semester=None):
     """Create bcw_produktinteresse + bcw_produktinteresseprodukte records."""
     steps = []
 
@@ -337,6 +337,9 @@ def create_produktinteresse(config, contact_id, produkte_ids, post_wunsch=False)
         "bcw_informationsmaterialiensenden": True,
         "bcw_versandart": versandart,
     }
+
+    if semester:
+        pi_data["bcw_semesterstartwunsch"] = semester  # Edm.Date: "2026-09-01"
 
     result = dynamics_request(config, "POST", "bcw_produktinteresses", pi_data)
     pi_id = extract_id(result)
@@ -429,7 +432,8 @@ def handle_infomaterial_request(data):
         # 2. Create Produktinteresse with infomaterialsenden=true
         produkte = data.get("produkte", [])
         post_wunsch = data.get("postWunsch", False)
-        pi_steps = create_produktinteresse(DYNAMICS_CONFIG, contact_id, produkte, post_wunsch)
+        semester = data.get("semester", None)
+        pi_steps = create_produktinteresse(DYNAMICS_CONFIG, contact_id, produkte, post_wunsch, semester)
         log["steps"].extend(pi_steps)
 
         log["status"] = "success"

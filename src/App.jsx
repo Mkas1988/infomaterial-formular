@@ -51,6 +51,7 @@ export default function App() {
   const [form,setForm]=useState({vorname:'',nachname:'',email:''});
   const [postWunsch,setPostWunsch]=useState(null);
   const [adresse,setAdresse]=useState({strasse:'',plz:'',ort:''});
+  const [semester,setSemester]=useState('');
   const [submitting,setSubmitting]=useState(false);
   const [submitted,setSubmitted]=useState(false);
   const [cartOpen,setCartOpen]=useState(false);
@@ -129,6 +130,7 @@ export default function App() {
       email:form.email.trim(),
       postWunsch:!!postWunsch,
       ...(postWunsch?{adresse}:{}),
+      ...(semester?{semester}:{}),
       produkte:cart.map(p=>({id:p.instanzId,name:p.produktname})),
     };
     try{
@@ -148,7 +150,7 @@ export default function App() {
       setSubmitting(false);
     }
   };
-  const reset=()=>{setAbschluss(null);setSelected(new Set());setProductConfig({});setModell(null);setStandort('');setStandortSearch('');setForm({vorname:'',nachname:'',email:''});setPostWunsch(null);setAdresse({strasse:'',plz:'',ort:''});setSubmitted(false);setSearch('');setOpenSections(new Set());go('start')};
+  const reset=()=>{setAbschluss(null);setSelected(new Set());setProductConfig({});setModell(null);setStandort('');setStandortSearch('');setForm({vorname:'',nachname:'',email:''});setSemester('');setPostWunsch(null);setAdresse({strasse:'',plz:'',ort:''});setSubmitted(false);setSearch('');setOpenSections(new Set());go('start')};
 
   if(!authed) return (
     <div className="hf">
@@ -332,6 +334,12 @@ export default function App() {
                   <div className="hf-field"><label>Vorname *</label><input value={form.vorname} onChange={e=>uf('vorname',e.target.value)} placeholder="Max"/></div>
                   <div className="hf-field"><label>Nachname *</label><input value={form.nachname} onChange={e=>uf('nachname',e.target.value)} placeholder="Mustermann"/></div>
                   <div className="hf-field"><label>E-Mail *</label><input type="email" value={form.email} onChange={e=>uf('email',e.target.value)} placeholder="max@beispiel.de"/></div>
+                  <div className="hf-field"><label>Wunschstartsemester</label>
+                    <select value={semester} onChange={e=>setSemester(e.target.value)} style={{padding:'12px 16px',border:'2px solid var(--fom-gray-light)',borderRadius:12,fontSize:15,fontFamily:'inherit',background:'white',color:semester?'#111':'#999',cursor:'pointer',appearance:'auto'}}>
+                      <option value="">— optional —</option>
+                      {(()=>{const now=new Date();const opts=[];for(let i=0;i<4;i++){const y=now.getFullYear()+Math.floor((now.getMonth()+3*i)/12);const isWS=((now.getMonth()+3*i)%12)>=6;const label=isWS?`Wintersemester ${y}`:`Sommersemester ${y}`;const val=isWS?`${y}-09-01`:`${y}-03-01`;if(!opts.some(o=>o.val===val))opts.push({label,val})}return opts.map(o=><option key={o.val} value={o.val}>{o.label}</option>)})()}
+                    </select>
+                  </div>
                   <button className="hf-next-btn" disabled={!canKontakt} onClick={()=>go('versand')}>Weiter <IcoArrow/></button>
                 </div>
                 </>)}
