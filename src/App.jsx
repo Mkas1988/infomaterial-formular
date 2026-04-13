@@ -177,7 +177,7 @@ export default function App() {
   if(!authed) return (
     <div className="hf">
       <div className="hf-pw-gate">
-        <img src={`${BASE}logos/2024_FOM_RGB_mitWortbildmarke_rechts (2).png`} alt="FOM" style={{width:220,marginBottom:32}}/>
+        <img src={`${BASE}logos/fom-wortbildmarke.png`} alt="FOM" style={{width:220,marginBottom:32}}/>
         <h2 style={{margin:'0 0 8px',fontFamily:'var(--fom-display)'}}>Zugang geschützt</h2>
         <p style={{color:'var(--fom-gray)',margin:'0 0 24px',fontSize:14}}>Bitte gib das Passwort ein, um fortzufahren.</p>
         <form onSubmit={e=>{e.preventDefault();if(pw==='Fom!1991'){sessionStorage.setItem(PW_KEY,'1');setAuthed(true)}else setPwErr(true)}} style={{display:'flex',flexDirection:'column',gap:12,width:'100%',maxWidth:320}}>
@@ -225,7 +225,7 @@ export default function App() {
           {/* START */}
           {step==='start'&&(
             <div className="hf-center">
-              <img src={`${BASE}logos/2024_FOM_RGB_mitWortbildmarke_rechts (2).png`} alt="FOM Hochschule" className="hf-hero-logo"/>
+              <img src={`${BASE}logos/fom-wortbildmarke.png`} alt="FOM Hochschule" className="hf-hero-logo"/>
               <h1 className="hf-hero-title">Kostenloses Infomaterial<br/>zu deinem Wunschstudium</h1>
               <p className="hf-hero-sub">Stell dir dein persönliches Info-Paket zusammen — kostenlos und unverbindlich.</p>
               {loading?<div className="hf-spinner-wrap"><div className="hf-spinner"/></div>:(
