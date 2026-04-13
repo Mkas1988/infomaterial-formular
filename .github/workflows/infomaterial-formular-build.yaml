@@ -1,0 +1,58 @@
+# To better understand this file read this:
+# https://docs.ionos.space/docs/github-actions-customization/
+
+name: "Deploy Now: Execute Build"
+
+on:
+  workflow_call:
+    inputs:
+      site-url:
+        required: true
+        type: string
+      branch-id:
+        required: true
+        type: string
+
+env:
+  DEPLOYMENT_FOLDER: dist
+
+jobs:
+# Please do not rename this job
+  build-project:
+    name: build infomaterial-formular
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: v22.x
+
+      - name: Build Node assets
+        env:
+          CI: true
+          DYNAMICS_CLIENT_ID: affd8c64-dac7-44a3-9d1c-2ffc52f63205
+          DYNAMICS_CLIENT_SECRET: oVZ8Q~_MMX_V_iOf_-BjZSiEmAq8s6sof33YYaOv
+          DYNAMICS_ORG_URL: https://bcw-gruppe.crm4.dynamics.com
+          DYNAMICS_TENANT_ID: 25341995-fa74-43de-8fbf-e48ba0e30a0b
+          SITE_URL: ${{ inputs.site-url }}
+        run: |
+          npm ci
+          npm run build
+
+# Please do not touch the following action
+      - name: Store deployment content
+        uses: ionos-deploy-now/artifact-action@v1
+        with:
+          api-key: ${{ secrets.IONOS_API_KEY }}
+          service-host: api-eu.ionos.space
+          project-id: 646bf81c-91ea-4e08-86d8-3bd5dccfe497
+          branch-id: ${{ inputs.branch-id }}
+          version: ${{ github.sha }}
+          folder: ${{ env.DEPLOYMENT_FOLDER }}
+          config-file: .deploy-now/infomaterial-formular/config.yaml
+          action: upload
