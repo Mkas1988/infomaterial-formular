@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-const API = '/api';
+const API = import.meta.env.DEV ? '/api' : 'https://fom-register-api.vercel.app/api';
 const PW_KEY = 'fom_auth';
 const ds = n => (!n ? '' : n.toLowerCase()==='virtuell' ? 'Digitales Live-Studium' : n);
 
@@ -73,7 +73,8 @@ export default function App() {
       .then(r=>{if(r.success)setData(r.data||[])})
       .finally(()=>setLoading(false));
     // Load dual products
-    fetch(`${API}/infomaterial/produkte/dual`).then(r=>r.json())
+    fetch('/produkte-dual.json').then(r=>{if(!r.ok)throw new Error();return r.json()})
+      .catch(()=>fetch(`${API}/infomaterial/produkte/dual`).then(r=>r.json()))
       .then(r=>{if(r.success)setDualData(r.data||[])}).catch(()=>{});
     // Load events for thank-you page recommendations
     fetch('https://mkas1988.github.io/fom-events/events.json')
@@ -153,7 +154,8 @@ export default function App() {
       produkte:cart.map(p=>({id:p.instanzId,name:p.produktname})),
     };
     try{
-      const resp=await fetch(`${API}/infomaterial/submit`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const submitUrl=import.meta.env.DEV?`${API}/infomaterial/submit`:`${API}/infomaterial`;
+      const resp=await fetch(submitUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const result=await resp.json();
       if(!resp.ok||!result.success){
         console.error('Dynamics error:',result);
