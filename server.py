@@ -120,26 +120,20 @@ def dynamics_get_all(config, path):
 # Produkte laden und für Frontend aufbereiten
 # ---------------------------------------------------------------------------
 
-def fetch_and_map_produkte(config):
+def fetch_and_map_produkte(config, studienform=100000005, label="Studium neben dem Beruf"):
     """
     Lädt alle aktiven FOM-Studiengänge aus Dynamics 365 und mappt sie
     auf das Format, das das Frontend erwartet.
 
-    Dynamics-Struktur:
-    - Jedes Produkt = eine Instanz (Studienfach + Standort + Zeitmodell)
-    - Mehrere Instanzen gehören zum selben Studienfach (z.B. "BWL" in Berlin, Hamburg, Virtuell)
-
-    Frontend erwartet:
-    - Produktname, ProduktTypName, Hochschulbereich, StandortName,
-      InstanzID, ECTS, DauerZahl, DauerEinheit, AbschlussName
+    studienform: 100000005 = Studium neben dem Beruf, 100000000 = ausbildungsbegleitend
     """
     params = urllib.parse.urlencode({
         "$select": "name,productnumber,bcw_hochschulbereich,bcw_produktkuerzel,bcw_produktgruppe,producturl",
-        "$filter": "bcw_produktstatus eq 100000000 and bcw_produktgruppe eq 100000003",
+        "$filter": f"bcw_produktstatus eq 100000000 and bcw_produktgruppe eq 100000003 and bcw_studienform eq {studienform}",
         "$orderby": "name asc",
     }, quote_via=urllib.parse.quote)
 
-    print("  Lade Produkte aus Dynamics 365...")
+    print(f"  Lade Produkte aus Dynamics 365 ({label})...")
     raw = dynamics_get_all(config, f"products?{params}")
     print(f"  {len(raw)} Produkt-Records geladen. Lade Details...")
 
@@ -147,7 +141,7 @@ def fetch_and_map_produkte(config):
     params_full = urllib.parse.urlencode({
         "$select": (
             "name,productnumber,bcw_hochschulbereich,bcw_produktkuerzel,"
-            "bcw_produktgruppe,producturl"
+            "bcw_produktgruppe,producturl,bcw_studienform"
         ),
         "$expand": (
             "bcw_Abschluss($select=bcw_name),"
@@ -156,7 +150,7 @@ def fetch_and_map_produkte(config):
             "bcw_Produktart($select=bcw_name),"
             "bcw_Zeitmodell($select=bcw_name)"
         ),
-        "$filter": "bcw_produktstatus eq 100000000 and bcw_produktgruppe eq 100000003",
+        "$filter": f"bcw_produktstatus eq 100000000 and bcw_produktgruppe eq 100000003 and bcw_studienform eq {studienform}",
         "$orderby": "name asc",
     }, quote_via=urllib.parse.quote)
 
@@ -307,6 +301,7 @@ def create_or_update_contact(config, data):
         "firstname": data["vorname"],
         "lastname": data["nachname"],
         "emailaddress1": data["email"],
+        "emailaddress2": data["email"],
         "bcw_kontaktursprung": 100000003,  # Website Infomaterial
     }
 
@@ -408,6 +403,64 @@ def create_produktinteresse(config, contact_id, produkte_ids, post_wunsch=False,
     return steps
 
 
+def fetch_infomaterial_submissions(config):
+    """Fetch all 'Infomaterial-Website' Produktinteressen from Dynamics with linked products and contact."""
+    params = urllib.parse.urlencode({
+        "$select": "bcw_name,createdon,bcw_versandart,bcw_semesterstartwunsch,statecode,statuscode",
+        "$expand": "bcw_Kontakt($select=firstname,lastname,emailaddress1,emailaddress2)",
+        "$filter": "bcw_name eq 'Infomaterial-Website'",
+        "$orderby": "createdon desc",
+        "$top": "50",
+    }, quote_via=urllib.parse.quote)
+
+    results = dynamics_get(config, f"bcw_produktinteresses?{params}")
+    records = results.get("value", [])
+
+    submissions = []
+    for rec in records:
+        pi_id = rec.get("bcw_produktinteresseid", "")
+        contact = rec.get("bcw_Kontakt") or {}
+
+        # Fetch linked Produktinteresseprodukte for this PI
+        pip_params = urllib.parse.urlencode({
+            "$filter": f"_bcw_produktinteresse_value eq '{pi_id}'",
+            "$select": "bcw_name",
+            "$expand": "bcw_Produkt($select=name)",
+        }, quote_via=urllib.parse.quote)
+        try:
+            pip_result = dynamics_get(config, f"bcw_produktinteresseproduktes?{pip_params}")
+            produkte = []
+            for pip in pip_result.get("value", []):
+                prod = pip.get("bcw_Produkt") or {}
+                produkte.append({"name": prod.get("name", pip.get("bcw_name", ""))})
+        except Exception:
+            produkte = []
+
+        versandart_val = rec.get("bcw_versandart")
+        versand_map = {100000000: "E-Mail", 100000001: "Post", 100000002: "E-Mail & Post"}
+
+        submissions.append({
+            "timestamp": rec.get("createdon", ""),
+            "status": "success" if rec.get("statecode") in (0, 1) else "error",
+            "input": {
+                "vorname": contact.get("firstname", ""),
+                "nachname": contact.get("lastname", ""),
+                "email": contact.get("emailaddress2") or contact.get("emailaddress1", ""),
+                "postWunsch": versandart_val in (100000001, 100000002),
+                "produkte": produkte,
+            },
+            "steps": [
+                {"step": "Kontakt", "contactId": rec.get("_bcw_kontakt_value", "")},
+                {"step": "Produktinteresse erstellt", "id": pi_id},
+            ] + [{"step": f"Produkt verknüpft: {p['name']}"} for p in produkte],
+            "contactId": rec.get("_bcw_kontakt_value", ""),
+            "versand": versand_map.get(versandart_val, "E-Mail"),
+            "semester": rec.get("bcw_semesterstartwunsch", ""),
+        })
+
+    return submissions
+
+
 def handle_infomaterial_request(data):
     """Process an infomaterial request: Contact + Produktinteresse in Dynamics."""
     log = {"timestamp": datetime.now().isoformat(), "status": "pending", "steps": [], "input": data}
@@ -446,12 +499,27 @@ def handle_infomaterial_request(data):
         return log, 500
 
 
-# Store recent submissions for debug
-recent_submissions = []
+# Store submissions persistently in a JSON file
+import os
+SUBMISSIONS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "submissions.json")
+
+def load_submissions():
+    try:
+        with open(SUBMISSIONS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+def save_submissions(subs):
+    with open(SUBMISSIONS_FILE, "w", encoding="utf-8") as f:
+        json.dump(subs[:50], f, ensure_ascii=False, indent=2)
+
+recent_submissions = load_submissions()
 
 
 class APIHandler(http.server.BaseHTTPRequestHandler):
     produkte_data = []
+    dual_data = []
 
     def do_GET(self):
         if self.path == "/api/infomaterial/produkte":
@@ -465,12 +533,32 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
             }, ensure_ascii=False)
             self.wfile.write(response.encode("utf-8"))
 
-        elif self.path == "/api/infomaterial/submissions":
+        elif self.path == "/api/infomaterial/produkte/dual":
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
-            self.wfile.write(json.dumps(recent_submissions, ensure_ascii=False).encode("utf-8"))
+            response = json.dumps({
+                "success": True,
+                "data": self.dual_data,
+            }, ensure_ascii=False)
+            self.wfile.write(response.encode("utf-8"))
+
+        elif self.path == "/api/infomaterial/submissions":
+            # Load all "Infomaterial-Website" Produktinteressen from Dynamics
+            try:
+                submissions = fetch_infomaterial_submissions(DYNAMICS_CONFIG)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(submissions, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
 
         elif self.path == "/api/infomaterial/produkte/refresh":
             print("  Refresh angefordert...")
@@ -511,6 +599,7 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
             recent_submissions.insert(0, log)
             if len(recent_submissions) > 50:
                 recent_submissions.pop()
+            save_submissions(recent_submissions)
 
             self.send_response(status_code)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -554,11 +643,16 @@ def main():
     # Produkte laden
     print()
     try:
-        APIHandler.produkte_data = fetch_and_map_produkte(DYNAMICS_CONFIG)
+        APIHandler.produkte_data = fetch_and_map_produkte(DYNAMICS_CONFIG, 100000005, "Studium neben dem Beruf")
     except Exception as e:
-        print(f"  ✗ Fehler beim Laden: {e}")
-        print("  Server startet trotzdem — /api/infomaterial/produkte/refresh zum Nachladen")
+        print(f"  ✗ Fehler beim Laden (berufsbegleitend): {e}")
         APIHandler.produkte_data = []
+
+    try:
+        APIHandler.dual_data = fetch_and_map_produkte(DYNAMICS_CONFIG, 100000000, "ausbildungsbegleitend")
+    except Exception as e:
+        print(f"  ✗ Fehler beim Laden (dual): {e}")
+        APIHandler.dual_data = []
 
     # Server starten
     server = http.server.HTTPServer(("127.0.0.1", SERVER_PORT), APIHandler)

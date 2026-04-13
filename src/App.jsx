@@ -25,7 +25,7 @@ const SCHOOLS = {
   'School of Dual Studies':              { label: 'Duales Studium',          color: '#F9CB00' },
   'Open Business School':                { label: 'Open Business School',    color: '#0071DE' },
 };
-const SCHOOL_HIDE = new Set(['School of Dual Studies', 'Diplomstudiengänge', 'Graduate School', 'ATAFOM', 'Open Business School', 'FOM', 'IIS - GSSBT']);
+const SCHOOL_HIDE = new Set(['School of Dual Studies', 'Diplomstudiengänge', 'Graduate School', 'ATAFOM', 'Open Business School', 'FOM', 'IIS - GSSBT', 'GoBS']);
 const schoolLabel = s => (SCHOOLS[s]?.label) || s || 'Weitere Studiengänge';
 const schoolColor = s => (SCHOOLS[s]?.color) || '#00C6B2';
 
@@ -51,25 +51,43 @@ export default function App() {
   const [form,setForm]=useState({vorname:'',nachname:'',email:''});
   const [postWunsch,setPostWunsch]=useState(null);
   const [adresse,setAdresse]=useState({strasse:'',plz:'',ort:''});
-  const [semester,setSemester]=useState('');
+  const [semester,setSemester]=useState(''); // kept for backwards compat, but per-product semester is in productConfig
   const [submitting,setSubmitting]=useState(false);
   const [submitted,setSubmitted]=useState(false);
+  const [eventReg,setEventReg]=useState({}); // {eventId: 'idle'|'loading'|'done'|'error'}
+  const registerForEvent=async(eventId)=>{
+    setEventReg(prev=>({...prev,[eventId]:'loading'}));
+    try{
+      const resp=await fetch('https://fom-register-api.vercel.app/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vorname:form.vorname.trim(),nachname:form.nachname.trim(),email:form.email.trim(),eventId})});
+      const result=await resp.json();
+      if(resp.ok&&result.success){setEventReg(prev=>({...prev,[eventId]:'done'}))}
+      else{console.error('Event-Reg error:',result);setEventReg(prev=>({...prev,[eventId]:'error'}))}
+    }catch(err){console.error('Event-Reg failed:',err);setEventReg(prev=>({...prev,[eventId]:'error'}))}
+  };
   const [cartOpen,setCartOpen]=useState(false);
 
+  const [dualData,setDualData]=useState([]);
   useEffect(()=>{
     fetch('/produkte.json').then(r=>{if(!r.ok)throw new Error();return r.json()})
       .catch(()=>fetch(`${API}/infomaterial/produkte`).then(r=>r.json()))
       .then(r=>{if(r.success)setData(r.data||[])})
       .finally(()=>setLoading(false));
+    // Load dual products
+    fetch(`${API}/infomaterial/produkte/dual`).then(r=>r.json())
+      .then(r=>{if(r.success)setDualData(r.data||[])}).catch(()=>{});
+    // Load events for thank-you page recommendations
+    fetch('https://mkas1988.github.io/fom-events/events.json')
+      .then(r=>r.json()).then(evts=>{window.__fomEvents=evts}).catch(()=>{});
   },[]);
 
-  // Group by Produktname
+  // Group by Produktname — use dualData for Dual magazine
+  const activeData=abschluss==='Dual'?dualData:data;
   const grouped={};
-  data.forEach(p=>{const k=p.Produktname;if(!grouped[k])grouped[k]={...p,instanzen:[],schools:new Set()};grouped[k].instanzen.push(p);if(p.Hochschulbereich)grouped[k].schools.add(p.Hochschulbereich)});
+  activeData.forEach(p=>{const k=p.Produktname;if(!grouped[k])grouped[k]={...p,instanzen:[],schools:new Set()};grouped[k].instanzen.push(p);if(p.Hochschulbereich)grouped[k].schools.add(p.Hochschulbereich)});
   const all=Object.values(grouped);
   const bachelors=all.filter(m=>(m.ProduktTypName||'').includes('Bachelor'));
   const masterList=all.filter(m=>(m.ProduktTypName||'').includes('Master'));
-  const currentList=abschluss==='Bachelor'?bachelors:abschluss==='Master'?masterList:[];
+  const currentList=abschluss==='Bachelor'?bachelors:abschluss==='Master'?masterList:abschluss==='Dual'?bachelors:[];
 
   // Group by Hochschulbereich
   const bySchool={};
@@ -92,6 +110,7 @@ export default function App() {
   const unassigned=selectedMasters.filter(m=>!productConfig[m.Produktname]);
   const allStandorte=(()=>{const s=new Set();const hide=new Set(['virtuell','fernstudium','']);(unassigned.length>0?unassigned:selectedMasters).forEach(m=>m.instanzen.forEach(i=>{const name=(i.StandortName||'').trim();if(!hide.has(name.toLowerCase())&&name&&!name.includes(','))s.add(name)}));return[...s].sort()})();
   const filteredStandorte=allStandorte.filter(s=>!standortSearch||s.toLowerCase().includes(standortSearch.toLowerCase()));
+  const hasCampusOption=allStandorte.length>0;
 
   const go=(s,d='fwd')=>{setDir(d);setStep(s)};
   const stepIdx=STEP_KEYS.indexOf(step);
@@ -155,7 +174,7 @@ export default function App() {
   if(!authed) return (
     <div className="hf">
       <div className="hf-pw-gate">
-        <img src="/logos/fom-logo.png" alt="FOM" style={{width:180,marginBottom:32}}/>
+        <img src="/logos/2024_FOM_RGB_mitWortbildmarke_rechts (2).png" alt="FOM" style={{width:220,marginBottom:32}}/>
         <h2 style={{margin:'0 0 8px',fontFamily:'var(--fom-display)'}}>Zugang geschützt</h2>
         <p style={{color:'var(--fom-gray)',margin:'0 0 24px',fontSize:14}}>Bitte gib das Passwort ein, um fortzufahren.</p>
         <form onSubmit={e=>{e.preventDefault();if(pw==='Fom!1991'){sessionStorage.setItem(PW_KEY,'1');setAuthed(true)}else setPwErr(true)}} style={{display:'flex',flexDirection:'column',gap:12,width:'100%',maxWidth:320}}>
@@ -203,7 +222,7 @@ export default function App() {
           {/* START */}
           {step==='start'&&(
             <div className="hf-center">
-              <img src="/logos/fom-logo.png" alt="FOM Hochschule" className="hf-hero-logo"/>
+              <img src="/logos/2024_FOM_RGB_mitWortbildmarke_rechts (2).png" alt="FOM Hochschule" className="hf-hero-logo"/>
               <h1 className="hf-hero-title">Kostenloses Infomaterial<br/>zu deinem Wunschstudium</h1>
               <p className="hf-hero-sub">Stell dir dein persönliches Info-Paket zusammen — kostenlos und unverbindlich.</p>
               {loading?<div className="hf-spinner-wrap"><div className="hf-spinner"/></div>:(
@@ -225,6 +244,10 @@ export default function App() {
                 <button className="hf-mag-card" onClick={()=>{setAbschluss('Master');setSearch('');setOpenSections(new Set());go('studiengang')}}>
                   <div className="hf-mag-img"><img src="/master-magazin.avif" alt="Master Magazin"/></div>
                   <div className="hf-mag-info"><span className="hf-mag-label">Master</span></div>
+                </button>
+                <button className="hf-mag-card" onClick={()=>{setAbschluss('Dual');setSearch('');setOpenSections(new Set());go('studiengang')}}>
+                  <div className="hf-mag-img"><img src="/24_321_FOM_alle_Coverlayouts_Mockup_Dual.jpg" alt="Dual Magazin"/></div>
+                  <div className="hf-mag-info"><span className="hf-mag-label">Dual</span></div>
                 </button>
               </div>
             </div>
@@ -292,21 +315,21 @@ export default function App() {
                 <h2 className="hf-title">Wie möchtest du studieren?</h2>
                 <p className="hf-sub">Wähle dein bevorzugtes Studienmodell.</p>
                 <div className="hf-options">
-                  <button className="hf-option" onClick={()=>{setModell('Campus');setStandort('');go('standort')}}>
+                  {hasCampusOption&&<button className="hf-option" onClick={()=>{setModell('Campus');setStandort('');go('standort')}}>
                     <span className="hf-option-emoji">🏛️</span>
                     <div className="hf-option-text"><span className="hf-option-label">Am Campus</span><span className="hf-option-desc">Präsenzstudium vor Ort an einem Hochschulzentrum</span></div>
                     <IcoArrow/>
-                  </button>
+                  </button>}
                   <button className="hf-option" onClick={()=>{setModell('DLS');assignConfig('DLS','');go('kontakt')}}>
                     <span className="hf-option-emoji">💻</span>
                     <div className="hf-option-text"><span className="hf-option-label">Digitales Live-Studium</span><span className="hf-option-desc">Virtuell & interaktiv — live aus den FOM Studios</span></div>
                     <IcoArrow/>
                   </button>
-                  <button className="hf-option" onClick={()=>{setModell('unsicher');assignConfig('unsicher','');go('kontakt')}}>
+                  {hasCampusOption&&<button className="hf-option" onClick={()=>{setModell('unsicher');assignConfig('unsicher','');go('kontakt')}}>
                     <span className="hf-option-emoji">🤔</span>
                     <div className="hf-option-text"><span className="hf-option-label">Ich bin noch unsicher</span><span className="hf-option-desc">Wir beraten dich gerne zu beiden Varianten</span></div>
                     <IcoArrow/>
-                  </button>
+                  </button>}
                 </div>
                 </>)}
 
@@ -334,12 +357,6 @@ export default function App() {
                   <div className="hf-field"><label>Vorname *</label><input value={form.vorname} onChange={e=>uf('vorname',e.target.value)} placeholder="Max"/></div>
                   <div className="hf-field"><label>Nachname *</label><input value={form.nachname} onChange={e=>uf('nachname',e.target.value)} placeholder="Mustermann"/></div>
                   <div className="hf-field"><label>E-Mail *</label><input type="email" value={form.email} onChange={e=>uf('email',e.target.value)} placeholder="max@beispiel.de"/></div>
-                  <div className="hf-field"><label>Wunschstartsemester</label>
-                    <select value={semester} onChange={e=>setSemester(e.target.value)} style={{padding:'12px 16px',border:'2px solid var(--fom-gray-light)',borderRadius:12,fontSize:15,fontFamily:'inherit',background:'white',color:semester?'#111':'#999',cursor:'pointer',appearance:'auto'}}>
-                      <option value="">— optional —</option>
-                      {(()=>{const now=new Date();const opts=[];for(let i=0;i<4;i++){const y=now.getFullYear()+Math.floor((now.getMonth()+3*i)/12);const isWS=((now.getMonth()+3*i)%12)>=6;const label=isWS?`Wintersemester ${y}`:`Sommersemester ${y}`;const val=isWS?`${y}-09-01`:`${y}-03-01`;if(!opts.some(o=>o.val===val))opts.push({label,val})}return opts.map(o=><option key={o.val} value={o.val}>{o.label}</option>)})()}
-                    </select>
-                  </div>
                   <button className="hf-next-btn" disabled={!canKontakt} onClick={()=>go('versand')}>Weiter <IcoArrow/></button>
                 </div>
                 </>)}
@@ -432,6 +449,13 @@ export default function App() {
                   <h4 className="hf-summary-label">Versand</h4>
                   <p className="hf-summary-value">{postWunsch?<>Per E-Mail & Post<br/>{adresse.strasse}, {adresse.plz} {adresse.ort}</>:'Nur per E-Mail'}</p>
                 </div>
+                <div className="hf-summary-section">
+                  <h4 className="hf-summary-label">Wann möchtest du mit deinem Studium starten?</h4>
+                  <select value={semester} onChange={e=>setSemester(e.target.value)} style={{padding:'10px 14px',border:'1.5px solid var(--fom-gray-light)',borderRadius:10,fontSize:14,fontFamily:'inherit',background:'white',color:semester?'#111':'#999',cursor:'pointer',appearance:'auto',width:'100%',maxWidth:300}}>
+                    <option value="">— optional —</option>
+                    {(()=>{const opts=[];const now=new Date();const curMonth=now.getMonth();const curYear=now.getFullYear();const addSem=(type,year)=>{const val=type==='SS'?`${year}-03-01`:`${year}-09-01`;const label=type==='SS'?`Sommersemester ${year}`:`Wintersemester ${year}`;if(!opts.some(o=>o.val===val))opts.push({label,val})};if(curMonth<3){addSem('SS',curYear);addSem('WS',curYear)}else if(curMonth<9){addSem('WS',curYear);addSem('SS',curYear+1)}else{addSem('SS',curYear+1);addSem('WS',curYear+1)}for(let y=curYear+1;y<=curYear+3;y++){addSem('SS',y);addSem('WS',y)}return opts.slice(0,6).map(o=><option key={o.val} value={o.val}>{o.label}</option>)})()}
+                  </select>
+                </div>
               </div>
 
               <div className="hf-mehr-box" style={{marginTop:24}}>
@@ -452,6 +476,90 @@ export default function App() {
               <h2 className="hf-title">Vielen Dank!</h2>
               <p className="hf-sub">Infomaterial zu {selected.size} Studiengang{selected.size!==1?'en':''} an <strong>{form.email}</strong>{postWunsch?' — auch per Post':''}.</p>
               <div className="hf-done-list">{[...selected].map(n=><div key={n} className="hf-done-item"><strong>{n}</strong><span>{modell==='Campus'?ds(standort):modell==='DLS'?'Digitales Live-Studium':'Noch unsicher'}</span></div>)}</div>
+              {/* Passende Info-Veranstaltungen */}
+              {(()=>{
+                const now=new Date();
+                const evts=(window.__fomEvents||[]).filter(ev=>new Date(ev.startDate)>now);
+                const cards=[];
+                const chosenStandort=standort||'';
+                const isDLS=modell==='DLS';
+                const isCampus=modell==='Campus';
+                const isDual=abschluss==='Dual';
+                const isBachelor=abschluss==='Bachelor'||abschluss==='Dual';
+                const isMaster=abschluss==='Master';
+
+                // 1. Infoveranstaltung Bachelor/Master/Dual
+                if(isDual){
+                  const dualEv=evts.find(ev=>ev.typeLabel==='Infoveranstaltung'&&ev.name&&ev.name.includes('Dual'));
+                  if(dualEv)cards.push({...dualEv,label:'Infoveranstaltung Duales Studium'});
+                }else{
+                  if(isBachelor){const ev=evts.find(e=>e.typeLabel==='Infoveranstaltung'&&e.name&&e.name.startsWith('Bachelor-Studium'));if(ev)cards.push({...ev,label:'Infoveranstaltung Bachelor-Studium'})}
+                  if(isMaster){const ev=evts.find(e=>e.typeLabel==='Infoveranstaltung'&&e.name&&e.name.startsWith('Master-Studium'));if(ev)cards.push({...ev,label:'Infoveranstaltung Master-Studium'})}
+                }
+
+                // 2. DLS Infoveranstaltung (when DLS modell chosen, for Bachelor/Master)
+                if(isDLS&&!isDual){
+                  const dlsEv=evts.find(ev=>ev.typeLabel==='Infoveranstaltung'&&ev.name&&ev.name.includes('Digitalen Live-Studium'));
+                  if(dlsEv&&!cards.some(c=>c.id===dlsEv.id))cards.push({...dlsEv,label:'Infoveranstaltung Digitales Live-Studium'});
+                }
+
+                // 3. Meet your Campus (when Campus modell chosen or Dual)
+                if((isCampus||isDual)&&chosenStandort){
+                  const campusType=isDual?'':isBachelor?'Bachelor':isMaster?'Master':'';
+                  const campusEv=evts.find(ev=>{
+                    if(ev.typeLabel!=='Meet your Campus')return false;
+                    const loc=(ev.location||'').toLowerCase();
+                    const name=(ev.name||'').toLowerCase();
+                    const matchLoc=loc.includes(chosenStandort.toLowerCase())||name.includes(chosenStandort.toLowerCase());
+                    if(!matchLoc)return false;
+                    if(campusType){return name.includes(campusType.toLowerCase())||name.includes('bachelor & master')}
+                    return true;
+                  });
+                  if(campusEv&&!cards.some(c=>c.id===campusEv.id))cards.push({...campusEv,label:campusEv.name,standortHint:`Hochschulzentrum ${chosenStandort}`});
+                }
+
+                if(cards.length===0)return null;
+                const fmt=d=>{const dt=new Date(d);return dt.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric'})};
+                const time=d=>{const dt=new Date(d);return dt.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr'};
+                return(<div style={{marginTop:40,width:'calc(100% + 80px)',maxWidth:1000,marginLeft:-40}}>
+                  <h3 style={{margin:'0 0 6px',fontSize:18,fontFamily:'var(--fom-display)',fontWeight:700}}>Lerne die FOM persönlich kennen!</h3>
+                  <p style={{margin:'0 0 20px',fontSize:14,color:'var(--fom-gray)'}}>Passend zu deiner Auswahl — kostenlose Veranstaltungen:</p>
+                  <div style={{display:'grid',gridTemplateColumns:cards.length>1?'1fr 1fr':'1fr',gap:16}}>
+                    {cards.map(ev=>(
+                      <div key={ev.id} style={{borderRadius:14,overflow:'hidden',border:'1px solid #e5e7eb',background:'#fff',boxShadow:'0 2px 8px rgba(0,0,0,.06)',display:'flex',flexDirection:'column'}}>
+                        <div style={{position:'relative'}}>
+                          <img src={ev.imageUrl} alt={ev.name} style={{width:'100%',height:160,objectFit:'cover',display:'block'}} loading="lazy"/>
+                          <span style={{position:'absolute',top:8,left:8,background:'rgba(0,0,0,.6)',color:'#fff',fontSize:10,fontWeight:700,padding:'3px 8px',borderRadius:16,textTransform:'uppercase',letterSpacing:'.04em'}}>{ev.format==='Webinar'?'Online':'Vor Ort'}</span>
+                        </div>
+                        <div style={{padding:'16px 18px',display:'flex',flexDirection:'column',flex:1}}>
+                          <h4 style={{margin:'0 0 4px',fontSize:17,fontFamily:'var(--fom-display)',fontWeight:700}}>{ev.label}</h4>
+                          <p style={{margin:'0 0 4px',fontSize:14,color:'var(--fom-gray)'}}>{fmt(ev.startDate)} · {time(ev.startDate)}</p>
+                          <p style={{margin:'0 0 0',fontSize:13,color:'#999'}}>{ev.format==='Webinar'?'Live aus dem VirtualClassroom — bequem von zuhause':ev.standortHint?`${ev.standortHint} — Lerne die FOM persönlich vor Ort kennen`:ev.typeLabel==='Meet your Campus'?'Lerne die FOM persönlich vor Ort kennen':ev.location}</p>
+                          <div style={{marginTop:'auto',paddingTop:14}}>
+                          {eventReg[ev.id]==='done'?(
+                            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                              <span style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 24px',background:'#e8f5e9',color:'#2e7d32',borderRadius:50,fontSize:14,fontWeight:700,fontFamily:'inherit',alignSelf:'flex-start'}}><IcoCheck/> Angemeldet!</span>
+                              <div style={{background:'#f0faf8',borderRadius:12,padding:'16px 18px',borderLeft:'3px solid var(--fom-teal)'}}>
+                                <p style={{margin:'0 0 8px',fontSize:14,fontWeight:700,color:'#00806e'}}>Doppelt gut!</p>
+                                <p style={{margin:0,fontSize:13,color:'#333',lineHeight:1.6}}>Dein kostenloses Infomaterial ist unterwegs und du bist für <strong>{ev.label}</strong> am <strong>{new Date(ev.startDate).toLocaleDateString('de-DE',{day:'numeric',month:'long',year:'numeric'})}</strong> angemeldet. Bestätigung per E-Mail an <strong>{form.email}</strong>.</p>
+                              </div>
+                            </div>
+                          ):eventReg[ev.id]==='error'?(
+                            <button onClick={()=>registerForEvent(ev.id)} style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 24px',background:'#e00',color:'#fff',borderRadius:50,fontSize:14,fontWeight:700,border:'none',cursor:'pointer',fontFamily:'inherit'}}>Fehler — erneut versuchen</button>
+                          ):(
+                            <button onClick={()=>registerForEvent(ev.id)} disabled={eventReg[ev.id]==='loading'} style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 24px',background:'var(--fom-teal)',color:'#fff',borderRadius:50,fontSize:14,fontWeight:700,border:'none',cursor:'pointer',fontFamily:'inherit',opacity:eventReg[ev.id]==='loading'?.7:1}}>
+                              {eventReg[ev.id]==='loading'?<><span className="hf-spin"/> Wird angemeldet …</>:<>Jetzt kostenlos anmelden <IcoArrow/></>}
+                            </button>
+                          )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <a href="https://mkas1988.github.io/fom-events/" target="_blank" rel="noopener" style={{display:'inline-block',marginTop:12,fontSize:13,color:'var(--fom-teal)',fontWeight:600,textDecoration:'none'}}>Alle Veranstaltungen ansehen →</a>
+                </div>);
+              })()}
+
               <button className="hf-cta" onClick={reset} style={{marginTop:24}}>Neue Anfrage <IcoArrow/></button>
             </div>
           )}

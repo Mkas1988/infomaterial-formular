@@ -1,0 +1,364 @@
+[
+  {
+    "timestamp": "2026-04-13T10:27:06.607136",
+    "status": "success",
+    "steps": [
+      {
+        "step": "Kontakt updated",
+        "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+      },
+      {
+        "step": "Produktinteresse erstellt",
+        "id": "66f0268b-1237-f111-88b4-7c1e527828ba",
+        "infomaterialSenden": true
+      },
+      {
+        "step": "Produkt verknüpft: Bachelor of Arts (B.A.) in Management im Gesundheitswesen",
+        "produktId": "0bfe239d-42b8-ed11-83fe-000d3ab6dddf",
+        "id": "6a29668f-1237-f111-88b4-6045bde19b75"
+      },
+      {
+        "step": "BPF abgeschlossen"
+      },
+      {
+        "step": "Produktinteresse abgeschlossen"
+      }
+    ],
+    "input": {
+      "vorname": "Marvin",
+      "nachname": "Kasper",
+      "email": "kasper.marvin@gmail.com",
+      "postWunsch": false,
+      "produkte": [
+        {
+          "id": "0bfe239d-42b8-ed11-83fe-000d3ab6dddf",
+          "name": "Bachelor of Arts (B.A.) in Management im Gesundheitswesen"
+        }
+      ]
+    },
+    "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+  },
+  {
+    "timestamp": "2026-04-09T14:19:13.597157",
+    "status": "success",
+    "steps": [
+      {
+        "step": "Kontakt updated",
+        "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+      },
+      {
+        "step": "Produktinteresse erstellt",
+        "id": "6767554c-0e34-f111-88b4-7ced8d4161f9",
+        "infomaterialSenden": true
+      },
+      {
+        "step": "Produkt verknüpft: Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik",
+        "produktId": "c823485e-bfc6-ec11-a7b6-000d3addb2c1",
+        "id": "0c6c154d-0e34-f111-88b3-000d3ad8aef4"
+      },
+      {
+        "step": "BPF abgeschlossen"
+      },
+      {
+        "step": "Produktinteresse abgeschlossen"
+      }
+    ],
+    "input": {
+      "vorname": "Marvin",
+      "nachname": "Kasper",
+      "email": "kasper.marvin@gmail.com",
+      "postWunsch": false,
+      "produkte": [
+        {
+          "id": "c823485e-bfc6-ec11-a7b6-000d3addb2c1",
+          "name": "Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik"
+        }
+      ]
+    },
+    "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+  },
+  {
+    "timestamp": "2026-03-31T12:15:55.675295",
+    "status": "success",
+    "steps": [
+      {
+        "step": "Kontakt updated",
+        "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+      },
+      {
+        "step": "Produktinteresse erstellt",
+        "id": "10d83c97-ea2c-f111-88b4-7c1e527827bf",
+        "infomaterialSenden": true
+      },
+      {
+        "step": "Produkt verknüpft: Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik",
+        "produktId": "1623485e-bfc6-ec11-a7b6-000d3addb2c1",
+        "id": "aed0d695-ea2c-f111-88b4-7ced8d2f4f94"
+      },
+      {
+        "step": "BPF abgeschlossen"
+      },
+      {
+        "step": "Produktinteresse abgeschlossen"
+      }
+    ],
+    "input": {
+      "vorname": "Marvin",
+      "nachname": "Kasper",
+      "email": "kasper.marvin@gmail.com",
+      "postWunsch": false,
+      "produkte": [
+        {
+          "id": "1623485e-bfc6-ec11-a7b6-000d3addb2c1",
+          "name": "Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik"
+        }
+      ]
+    },
+    "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+  },
+  {
+    "timestamp": "2026-03-31T10:48:34.039830",
+    "status": "success",
+    "steps": [
+      {
+        "step": "Kontakt updated",
+        "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+      },
+      {
+        "step": "Produktinteresse erstellt",
+        "id": "b6930865-de2c-f111-88b4-7c1e52782932",
+        "infomaterialSenden": true
+      },
+      {
+        "step": "Produkt verknüpft: Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik",
+        "produktId": "1623485e-bfc6-ec11-a7b6-000d3addb2c1",
+        "id": "ca105e67-de2c-f111-88b4-00224899614b"
+      },
+      {
+        "step": "BPF abgeschlossen"
+      },
+      {
+        "step": "Produktinteresse abgeschlossen"
+      }
+    ],
+    "input": {
+      "vorname": "Marvin",
+      "nachname": "Kasper",
+      "email": "kasper.marvin@gmail.com",
+      "postWunsch": false,
+      "semester": "2027-03-01",
+      "produkte": [
+        {
+          "id": "1623485e-bfc6-ec11-a7b6-000d3addb2c1",
+          "name": "Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik"
+        }
+      ]
+    },
+    "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+  },
+  {
+    "timestamp": "2026-03-31T05:28:14.494429",
+    "status": "success",
+    "steps": [
+      {
+        "step": "Kontakt updated",
+        "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+      },
+      {
+        "step": "Produktinteresse erstellt",
+        "id": "b94eefa1-b12c-f111-88b4-7ced8d2f40b2",
+        "infomaterialSenden": true
+      },
+      {
+        "step": "Produkt verknüpft: Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik",
+        "produktId": "1623485e-bfc6-ec11-a7b6-000d3addb2c1",
+        "id": "505ee2a1-b12c-f111-88b4-7ced8d4161f9"
+      },
+      {
+        "step": "BPF abgeschlossen"
+      },
+      {
+        "step": "Produktinteresse abgeschlossen"
+      }
+    ],
+    "input": {
+      "vorname": "Marvin",
+      "nachname": "Kasper",
+      "email": "kasper.marvin@gmail.com",
+      "postWunsch": false,
+      "produkte": [
+        {
+          "id": "1623485e-bfc6-ec11-a7b6-000d3addb2c1",
+          "name": "Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik"
+        }
+      ]
+    },
+    "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+  },
+  {
+    "timestamp": "2026-03-31T05:14:11.783199",
+    "status": "success",
+    "steps": [
+      {
+        "step": "Kontakt updated",
+        "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+      },
+      {
+        "step": "Produktinteresse erstellt",
+        "id": "6a8ab9ad-af2c-f111-88b4-7ced8d768c00",
+        "infomaterialSenden": true
+      },
+      {
+        "step": "Produkt verknüpft: Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik",
+        "produktId": "1623485e-bfc6-ec11-a7b6-000d3addb2c1",
+        "id": "7c1691ab-af2c-f111-88b4-7c1e527828d0"
+      },
+      {
+        "step": "BPF abgeschlossen"
+      },
+      {
+        "step": "Produktinteresse abgeschlossen"
+      }
+    ],
+    "input": {
+      "vorname": "Marvin",
+      "nachname": "Kasper",
+      "email": "kasper.marvin@gmail.com",
+      "postWunsch": false,
+      "produkte": [
+        {
+          "id": "1623485e-bfc6-ec11-a7b6-000d3addb2c1",
+          "name": "Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik"
+        }
+      ]
+    },
+    "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+  },
+  {
+    "timestamp": "2026-03-31T05:11:20.244868",
+    "status": "success",
+    "steps": [
+      {
+        "step": "Kontakt updated",
+        "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+      },
+      {
+        "step": "Produktinteresse erstellt",
+        "id": "5e7af246-af2c-f111-88b4-7c1e5278206d",
+        "infomaterialSenden": true
+      },
+      {
+        "step": "Produkt verknüpft: Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik",
+        "produktId": "1623485e-bfc6-ec11-a7b6-000d3addb2c1",
+        "id": "739f7e47-af2c-f111-88b4-000d3aba6d95"
+      },
+      {
+        "step": "BPF abgeschlossen"
+      },
+      {
+        "step": "Produktinteresse abgeschlossen"
+      }
+    ],
+    "input": {
+      "vorname": "Marvin",
+      "nachname": "Kasper",
+      "email": "kasper.marvin@gmail.com",
+      "postWunsch": false,
+      "produkte": [
+        {
+          "id": "1623485e-bfc6-ec11-a7b6-000d3addb2c1",
+          "name": "Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik"
+        }
+      ]
+    },
+    "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+  },
+  {
+    "timestamp": "2026-03-31T05:10:45.821482",
+    "status": "success",
+    "steps": [
+      {
+        "step": "Kontakt updated",
+        "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+      },
+      {
+        "step": "Produktinteresse erstellt",
+        "id": "8bb83135-af2c-f111-88b4-0022489968ce",
+        "infomaterialSenden": true
+      },
+      {
+        "step": "Produkt verknüpft: Master of Science (M.Sc.) in Industrial Data Analytics & Künstliche Intelligenz",
+        "produktId": "ef931ba0-b6b0-f011-bbd2-7ced8d726280",
+        "id": "4a6c6b34-af2c-f111-88b4-7c1e527828d0"
+      },
+      {
+        "step": "BPF abgeschlossen"
+      },
+      {
+        "step": "Produktinteresse abgeschlossen"
+      }
+    ],
+    "input": {
+      "vorname": "Marvin",
+      "nachname": "Kasper",
+      "email": "kasper.marvin@gmail.com",
+      "postWunsch": false,
+      "produkte": [
+        {
+          "id": "ef931ba0-b6b0-f011-bbd2-7ced8d726280",
+          "name": "Master of Science (M.Sc.) in Industrial Data Analytics & Künstliche Intelligenz"
+        }
+      ]
+    },
+    "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+  },
+  {
+    "timestamp": "2026-03-31T05:01:01.938198",
+    "status": "success",
+    "steps": [
+      {
+        "step": "Kontakt updated",
+        "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+      },
+      {
+        "step": "Produktinteresse erstellt",
+        "id": "fbf337d5-ad2c-f111-88b3-7c1e5278210a",
+        "infomaterialSenden": true
+      },
+      {
+        "step": "Produkt verknüpft: Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik",
+        "produktId": "9723485e-bfc6-ec11-a7b6-000d3addb2c1",
+        "id": "bd5846d5-ad2c-f111-88b4-000d3aba6f1f"
+      },
+      {
+        "step": "Produkt verknüpft: Master of Science (M.Sc.) in Industrial Data Analytics & Künstliche Intelligenz",
+        "produktId": "ef931ba0-b6b0-f011-bbd2-7ced8d726280",
+        "id": "561377d4-ad2c-f111-88b4-6045bde19b75"
+      },
+      {
+        "step": "BPF abgeschlossen"
+      },
+      {
+        "step": "Produktinteresse abgeschlossen"
+      }
+    ],
+    "input": {
+      "vorname": "Marvin",
+      "nachname": "Kasper",
+      "email": "kasper.marvin@gmail.com",
+      "postWunsch": false,
+      "semester": "2027-03-01",
+      "produkte": [
+        {
+          "id": "9723485e-bfc6-ec11-a7b6-000d3addb2c1",
+          "name": "Bachelor of Arts (B.A.) in Gesundheitspsychologie & Medizinpädagogik"
+        },
+        {
+          "id": "ef931ba0-b6b0-f011-bbd2-7ced8d726280",
+          "name": "Master of Science (M.Sc.) in Industrial Data Analytics & Künstliche Intelligenz"
+        }
+      ]
+    },
+    "contactId": "9cbd8ae9-638a-ef11-ac21-000d3a66333a"
+  }
+]
