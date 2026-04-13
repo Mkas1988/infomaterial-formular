@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 const API = import.meta.env.DEV ? '/api' : 'https://fom-register-api.vercel.app/api';
+const BASE = import.meta.env.BASE_URL;
 const PW_KEY = 'fom_auth';
 const ds = n => (!n ? '' : n.toLowerCase()==='virtuell' ? 'Digitales Live-Studium' : n);
 
@@ -68,12 +69,12 @@ export default function App() {
 
   const [dualData,setDualData]=useState([]);
   useEffect(()=>{
-    fetch('/produkte.json').then(r=>{if(!r.ok)throw new Error();return r.json()})
+    fetch(`${BASE}produkte.json`).then(r=>{if(!r.ok)throw new Error();return r.json()})
       .catch(()=>fetch(`${API}/infomaterial/produkte`).then(r=>r.json()))
       .then(r=>{if(r.success)setData(r.data||[])})
       .finally(()=>setLoading(false));
     // Load dual products
-    fetch('/produkte-dual.json').then(r=>{if(!r.ok)throw new Error();return r.json()})
+    fetch(`${BASE}produkte-dual.json`).then(r=>{if(!r.ok)throw new Error();return r.json()})
       .catch(()=>fetch(`${API}/infomaterial/produkte/dual`).then(r=>r.json()))
       .then(r=>{if(r.success)setDualData(r.data||[])}).catch(()=>{});
     // Load events for thank-you page recommendations
@@ -176,7 +177,7 @@ export default function App() {
   if(!authed) return (
     <div className="hf">
       <div className="hf-pw-gate">
-        <img src="/logos/2024_FOM_RGB_mitWortbildmarke_rechts (2).png" alt="FOM" style={{width:220,marginBottom:32}}/>
+        <img src={`${BASE}logos/2024_FOM_RGB_mitWortbildmarke_rechts (2).png`} alt="FOM" style={{width:220,marginBottom:32}}/>
         <h2 style={{margin:'0 0 8px',fontFamily:'var(--fom-display)'}}>Zugang geschützt</h2>
         <p style={{color:'var(--fom-gray)',margin:'0 0 24px',fontSize:14}}>Bitte gib das Passwort ein, um fortzufahren.</p>
         <form onSubmit={e=>{e.preventDefault();if(pw==='Fom!1991'){sessionStorage.setItem(PW_KEY,'1');setAuthed(true)}else setPwErr(true)}} style={{display:'flex',flexDirection:'column',gap:12,width:'100%',maxWidth:320}}>
@@ -192,7 +193,7 @@ export default function App() {
     <div className="hf">
       {/* Header */}
       <header className="hf-header">
-        <a href="https://www.fom.de" target="_blank" rel="noopener"><img src="/logos/fom-logo.png" alt="FOM" className="hf-logo"/></a>
+        <a href="https://www.fom.de" target="_blank" rel="noopener"><img src={`${BASE}logos/fom-logo.png`} alt="FOM" className="hf-logo"/></a>
         <div className="hf-header-right">
           {selected.size>0&&step!=='done'&&(
             <span className="hf-header-badge">{selected.size} Studiengang{selected.size!==1?'e':''}</span>
@@ -224,7 +225,7 @@ export default function App() {
           {/* START */}
           {step==='start'&&(
             <div className="hf-center">
-              <img src="/logos/2024_FOM_RGB_mitWortbildmarke_rechts (2).png" alt="FOM Hochschule" className="hf-hero-logo"/>
+              <img src={`${BASE}logos/2024_FOM_RGB_mitWortbildmarke_rechts (2).png`} alt="FOM Hochschule" className="hf-hero-logo"/>
               <h1 className="hf-hero-title">Kostenloses Infomaterial<br/>zu deinem Wunschstudium</h1>
               <p className="hf-hero-sub">Stell dir dein persönliches Info-Paket zusammen — kostenlos und unverbindlich.</p>
               {loading?<div className="hf-spinner-wrap"><div className="hf-spinner"/></div>:(
@@ -240,15 +241,15 @@ export default function App() {
               <p className="hf-sub" style={{textAlign:'center'}}>Wähle dein gewünschtes Infomaterial.</p>
               <div className="hf-mag-cards">
                 <button className="hf-mag-card" onClick={()=>{setAbschluss('Bachelor');setSearch('');setOpenSections(new Set());go('studiengang')}}>
-                  <div className="hf-mag-img"><img src="/bachelor-magazin.avif" alt="Bachelor Magazin"/></div>
+                  <div className="hf-mag-img"><img src={`${BASE}bachelor-magazin.avif`} alt="Bachelor Magazin"/></div>
                   <div className="hf-mag-info"><span className="hf-mag-label">Bachelor</span></div>
                 </button>
                 <button className="hf-mag-card" onClick={()=>{setAbschluss('Master');setSearch('');setOpenSections(new Set());go('studiengang')}}>
-                  <div className="hf-mag-img"><img src="/master-magazin.avif" alt="Master Magazin"/></div>
+                  <div className="hf-mag-img"><img src={`${BASE}master-magazin.avif`} alt="Master Magazin"/></div>
                   <div className="hf-mag-info"><span className="hf-mag-label">Master</span></div>
                 </button>
                 <button className="hf-mag-card" onClick={()=>{setAbschluss('Dual');setSearch('');setOpenSections(new Set());go('studiengang')}}>
-                  <div className="hf-mag-img"><img src="/24_321_FOM_alle_Coverlayouts_Mockup_Dual.jpg" alt="Dual Magazin"/></div>
+                  <div className="hf-mag-img"><img src={`${BASE}24_321_FOM_alle_Coverlayouts_Mockup_Dual.jpg`} alt="Dual Magazin"/></div>
                   <div className="hf-mag-info"><span className="hf-mag-label">Dual</span></div>
                 </button>
               </div>
@@ -572,7 +573,7 @@ export default function App() {
 
       <footer className="hf-footer">
         <div className="hf-footer-logo">
-          <img src="/logos/fom-logo-white.svg" alt="FOM Hochschule"/>
+          <img src={`${BASE}logos/fom-logo-white.svg`} alt="FOM Hochschule"/>
         </div>
         <div className="hf-footer-inner">
           <div className="hf-footer-about">

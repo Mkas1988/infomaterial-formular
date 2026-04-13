@@ -1,7 +1,7 @@
 /* ═══ FOM Infomaterial — Newsroom Design ═══ */
-@font-face{font-family:'Neue-Haas-Grotesk-Display-Pro';src:url('/fonts/Neue-Haas-Grotesk-Display-Pro/Neue-Haas-Grotesk-Display-Pro-75-Bold.woff2') format('woff2'),url('/fonts/Neue-Haas-Grotesk-Display-Pro/Neue-Haas-Grotesk-Display-Pro-75-Bold.woff') format('woff');font-weight:700;font-style:normal;font-display:swap}
-@font-face{font-family:'Neue-Haas-Grotesk-Text-Pro';src:url('/fonts/Neue-Haas-Grotesk-Text-Pro/Neue-Haas-Grotesk-Text-Pro-55-Regular.woff2') format('woff2'),url('/fonts/Neue-Haas-Grotesk-Text-Pro/Neue-Haas-Grotesk-Text-Pro-55-Regular.woff') format('woff');font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:'Neue-Haas-Grotesk-Text-Pro';src:url('/fonts/Neue-Haas-Grotesk-Text-Pro/Neue-Haas-Grotesk-Text-Pro-75-Bold.woff2') format('woff2'),url('/fonts/Neue-Haas-Grotesk-Text-Pro/Neue-Haas-Grotesk-Text-Pro-75-Bold.woff') format('woff');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'Neue-Haas-Grotesk-Display-Pro';src:url('../public/fonts/Neue-Haas-Grotesk-Display-Pro/Neue-Haas-Grotesk-Display-Pro-75-Bold.woff2') format('woff2'),url('../public/fonts/Neue-Haas-Grotesk-Display-Pro/Neue-Haas-Grotesk-Display-Pro-75-Bold.woff') format('woff');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'Neue-Haas-Grotesk-Text-Pro';src:url('../public/fonts/Neue-Haas-Grotesk-Text-Pro/Neue-Haas-Grotesk-Text-Pro-55-Regular.woff2') format('woff2'),url('../public/fonts/Neue-Haas-Grotesk-Text-Pro/Neue-Haas-Grotesk-Text-Pro-55-Regular.woff') format('woff');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Neue-Haas-Grotesk-Text-Pro';src:url('../public/fonts/Neue-Haas-Grotesk-Text-Pro/Neue-Haas-Grotesk-Text-Pro-75-Bold.woff2') format('woff2'),url('../public/fonts/Neue-Haas-Grotesk-Text-Pro/Neue-Haas-Grotesk-Text-Pro-75-Bold.woff') format('woff');font-weight:700;font-style:normal;font-display:swap}
 
 :root {
   /* Primary Colors */
