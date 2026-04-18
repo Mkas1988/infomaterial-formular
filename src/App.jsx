@@ -4,6 +4,13 @@ const BASE = import.meta.env.BASE_URL;
 const PW_KEY = 'fom_auth';
 const ds = n => (!n ? '' : n.toLowerCase()==='virtuell' ? 'Digitales Live-Studium' : n);
 
+// Social Login — Client-IDs müssen vor Produktiv-Einsatz beim jeweiligen Provider registriert werden
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const APPLE_CLIENT_ID  = import.meta.env.VITE_APPLE_CLIENT_ID  || 'your.apple.service.id';
+
+const decodeJWT = t => { try { const p=t.split('.')[1]; return JSON.parse(decodeURIComponent(escape(atob(p.replace(/-/g,'+').replace(/_/g,'/'))))); } catch { return {}; } };
+const loadScript = (src,id) => new Promise((res,rej)=>{ if(document.getElementById(id))return res(); const s=document.createElement('script'); s.src=src; s.id=id; s.async=true; s.defer=true; s.onload=res; s.onerror=()=>rej(new Error('Script load failed: '+src)); document.head.appendChild(s); });
+
 const IcoArrow=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
 const IcoBack=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>;
 const IcoPin=()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>;
@@ -13,6 +20,8 @@ const IcoSearch=()=><svg width="18" height="18" viewBox="0 0 24 24" fill="none" 
 const IcoSend=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
 const IcoX=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 const IcoChevron=({open})=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{transition:'transform .2s',transform:open?'rotate(180deg)':''}}><polyline points="6 9 12 15 18 9"/></svg>;
+const IcoGoogle=()=><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>;
+const IcoApple=()=><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>;
 
 // Hochschulbereich names + offizielle Farben (FOM Corporate Design Manual 2025)
 const SCHOOLS = {
@@ -66,6 +75,80 @@ export default function App() {
     }catch(err){console.error('Event-Reg failed:',err);setEventReg(prev=>({...prev,[eventId]:'error'}))}
   };
   const [cartOpen,setCartOpen]=useState(false);
+
+  // Social Login (Google / Apple) — füllt Kontaktdaten automatisch aus
+  const [socialAuth,setSocialAuth]=useState(null); // {provider:'google'|'apple', email}
+  const [socialErr,setSocialErr]=useState('');
+  const [socialLoading,setSocialLoading]=useState(null); // 'google'|'apple'|null
+  const handleGoogleLogin=async()=>{
+    setSocialErr(''); setSocialLoading('google');
+    try{
+      await loadScript('https://accounts.google.com/gsi/client','google-gsi');
+      await new Promise((res,rej)=>{
+        try{
+          window.google.accounts.id.initialize({
+            client_id:GOOGLE_CLIENT_ID,
+            callback:(r)=>{
+              const d=decodeJWT(r.credential);
+              if(!d.email){rej(new Error('Keine E-Mail erhalten'));return}
+              setForm({vorname:d.given_name||'',nachname:d.family_name||'',email:d.email});
+              setSocialAuth({provider:'google',email:d.email});
+              setSocialLoading(null); res();
+            }
+          });
+          // Popup statt One-Tap, damit Auswahl explizit ist
+          window.google.accounts.id.prompt(notif=>{
+            if(notif.isNotDisplayed?.()||notif.isSkippedMoment?.()){
+              // Fallback: OAuth-Popup
+              const tc=window.google.accounts.oauth2.initTokenClient({
+                client_id:GOOGLE_CLIENT_ID,
+                scope:'openid email profile',
+                callback:async(t)=>{
+                  try{
+                    const ui=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:`Bearer ${t.access_token}`}}).then(r=>r.json());
+                    if(!ui.email){rej(new Error('Keine E-Mail erhalten'));return}
+                    setForm({vorname:ui.given_name||'',nachname:ui.family_name||'',email:ui.email});
+                    setSocialAuth({provider:'google',email:ui.email});
+                    setSocialLoading(null); res();
+                  }catch(e){rej(e)}
+                }
+              });
+              tc.requestAccessToken();
+            }
+          });
+        }catch(e){rej(e)}
+      });
+    }catch(err){
+      console.error('Google-Login fehlgeschlagen:',err);
+      setSocialErr('Google-Login fehlgeschlagen. Bitte manuell eintragen.');
+      setSocialLoading(null);
+    }
+  };
+  const handleAppleLogin=async()=>{
+    setSocialErr(''); setSocialLoading('apple');
+    try{
+      await loadScript('https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/de_DE/appleid.auth.js','apple-id');
+      window.AppleID.auth.init({
+        clientId:APPLE_CLIENT_ID,
+        scope:'name email',
+        redirectURI:window.location.origin+window.location.pathname,
+        usePopup:true
+      });
+      const data=await window.AppleID.auth.signIn();
+      const idData=decodeJWT(data?.authorization?.id_token||'');
+      const u=data?.user?.name||{};
+      const email=idData.email||'';
+      if(!email){throw new Error('Keine E-Mail erhalten')}
+      setForm({vorname:u.firstName||form.vorname,nachname:u.lastName||form.nachname,email});
+      setSocialAuth({provider:'apple',email});
+      setSocialLoading(null);
+    }catch(err){
+      console.error('Apple-Login fehlgeschlagen:',err);
+      setSocialErr('Apple-Login fehlgeschlagen. Bitte manuell eintragen.');
+      setSocialLoading(null);
+    }
+  };
+  const resetSocialAuth=()=>{ setSocialAuth(null); setForm({vorname:'',nachname:'',email:''}); };
 
   const [dualData,setDualData]=useState([]);
   useEffect(()=>{
@@ -172,7 +255,7 @@ export default function App() {
       setSubmitting(false);
     }
   };
-  const reset=()=>{setAbschluss(null);setSelected(new Set());setProductConfig({});setModell(null);setStandort('');setStandortSearch('');setForm({vorname:'',nachname:'',email:''});setSemester('');setPostWunsch(null);setAdresse({strasse:'',plz:'',ort:''});setSubmitted(false);setSearch('');setOpenSections(new Set());go('start')};
+  const reset=()=>{setAbschluss(null);setSelected(new Set());setProductConfig({});setModell(null);setStandort('');setStandortSearch('');setForm({vorname:'',nachname:'',email:''});setSemester('');setPostWunsch(null);setAdresse({strasse:'',plz:'',ort:''});setSubmitted(false);setSearch('');setOpenSections(new Set());setSocialAuth(null);setSocialErr('');setSocialLoading(null);go('start')};
 
   if(!authed) return (
     <div className="hf">
@@ -357,6 +440,27 @@ export default function App() {
                 <h2 className="hf-title">Wohin dürfen wir dein Infomaterial senden?</h2>
                 <p className="hf-sub">Deine E-Mail genügt — wir melden uns bei dir.</p>
                 <div className="hf-form-center">
+                  {socialAuth?(
+                    <div className="hf-social-success">
+                      <span className="hf-social-success-icon"><IcoCheckSm/></span>
+                      <div className="hf-social-success-text">
+                        <strong>Angemeldet mit {socialAuth.provider==='google'?'Google':'Apple'}</strong>
+                        <span>{socialAuth.email}</span>
+                      </div>
+                      <button type="button" className="hf-social-success-rm" onClick={resetSocialAuth} aria-label="Abmelden"><IcoX/></button>
+                    </div>
+                  ):(<>
+                    <div className="hf-social-login">
+                      <button type="button" className="hf-social-btn hf-social-google" onClick={handleGoogleLogin} disabled={!!socialLoading}>
+                        {socialLoading==='google'?<span className="hf-spin"/>:<IcoGoogle/>} Mit Google fortfahren
+                      </button>
+                      <button type="button" className="hf-social-btn hf-social-apple" onClick={handleAppleLogin} disabled={!!socialLoading}>
+                        {socialLoading==='apple'?<span className="hf-spin"/>:<IcoApple/>} Mit Apple fortfahren
+                      </button>
+                    </div>
+                    {socialErr&&<p className="hf-social-err">{socialErr}</p>}
+                    <div className="hf-divider"><span>oder manuell eintragen</span></div>
+                  </>)}
                   <div className="hf-field"><label>Vorname *</label><input value={form.vorname} onChange={e=>uf('vorname',e.target.value)} placeholder="Max"/></div>
                   <div className="hf-field"><label>Nachname *</label><input value={form.nachname} onChange={e=>uf('nachname',e.target.value)} placeholder="Mustermann"/></div>
                   <div className="hf-field"><label>E-Mail *</label><input type="email" value={form.email} onChange={e=>uf('email',e.target.value)} placeholder="max@beispiel.de"/></div>
